@@ -7,9 +7,10 @@ interface Props {
     disabled?: boolean
     children: ReactNode
     secondary?: boolean
+    tooltip?: string
 }
 
-export function Button({ theme, onClick, disabled, children, secondary }: Props) {
+export function Button({ theme, onClick, disabled, children, secondary, tooltip }: Props) {
     return (
         <button
             className="multichain__button"
@@ -29,6 +30,7 @@ export function Button({ theme, onClick, disabled, children, secondary }: Props)
                 fontSize: theme.fontSize,
                 fontWeight: theme.fontWeight
             }}
+            title={tooltip}
         >
             {children}
         </button>

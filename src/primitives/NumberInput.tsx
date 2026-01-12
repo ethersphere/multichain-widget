@@ -1,27 +1,39 @@
+import { Numbers } from 'cafe-utility'
+import { useState } from 'react'
 import { MultichainTheme } from '../MultichainTheme'
 
 interface Props {
     theme: MultichainTheme
     value: number
-    onChange?: (value: number) => void
-    min?: number
-    max?: number
-    step?: number
-    placeholder?: string
-    readOnly?: boolean
+    onChange: (value: number) => void
+    min: number
+    max: number
+    placeholder: string
 }
 
-export function NumberInput({ theme, value, onChange, min, max, step, placeholder, readOnly }: Props) {
+export function NumberInput({ theme, value, onChange, min, max, placeholder }: Props) {
+    const [textValue, setTextValue] = useState<string>(value.toString())
+
+    function normalizedOnChange(event: React.ChangeEvent<HTMLInputElement>) {
+        let raw = event.target.value
+        while (raw.startsWith('0') && raw.length > 1 && !['.'].includes(raw[1])) {
+            raw = raw.substring(1)
+        }
+        let number = Number(raw)
+        if (isNaN(number)) {
+            setTextValue(value.toString())
+            return
+        }
+        setTextValue(raw)
+        number = Numbers.clamp(number, min, max)
+        onChange(number)
+    }
+
     return (
         <input
-            type="number"
-            min={min}
-            max={max}
-            step={step}
             placeholder={placeholder}
-            value={value}
-            onChange={onChange ? e => onChange(Number(e.target.value)) : undefined}
-            readOnly={readOnly}
+            value={textValue}
+            onChange={event => normalizedOnChange(event)}
             className="multichain__input"
             style={{
                 paddingTop: theme.inputVerticalPadding,
