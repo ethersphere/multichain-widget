@@ -72,11 +72,12 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     const sourceTokenDisplayName = sourceTokenObject ? sourceTokenObject.symbol : 'N/A'
     const neededBzzAmount = FixedPointNumber.fromDecimalString(swapData.bzzAmount.toString(), 16)
     let neededBzzUsdValue: number | null = null
+    const neededDaiUsdValue = swapData.nativeAmount + parseFloat(library.constants.daiDustAmount.toDecimalString())
     let totalNeededUsdValue: number | null = null
     let selectedTokenAmountNeeded: FixedPointNumber | null = null
     if (bzzUsdPrice && selectedTokenUsdPrice && sourceTokenObject?.decimals) {
         neededBzzUsdValue = parseFloat(neededBzzAmount.toDecimalString()) * bzzUsdPrice
-        totalNeededUsdValue = (neededBzzUsdValue + swapData.nativeAmount) * 1.1 // +10% slippage
+        totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
         selectedTokenAmountNeeded = FixedPointNumber.fromDecimalString(
             (totalNeededUsdValue / selectedTokenUsdPrice).toString(),
             sourceTokenObject.decimals
@@ -274,14 +275,20 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
         // transfer step
         if (stepsToRun.includes('transfer')) {
             const daiBefore = await library.getGnosisNativeBalance(swapData.temporaryAddress)
+            let skipNeededDueToDust = false
             try {
-                setStepStatuses(x => ({ ...x, transfer: 'in-progress' }))
-                await library.transferGnosisNative({
-                    originPrivateKey: swapData.sessionKey,
-                    originAddress: swapData.temporaryAddress,
-                    to: Types.asHexString(swapData.targetAddress),
-                    amount: daiBefore.subtract(library.constants.daiDustAmount).toString()
-                })
+                const amountToTransfer = daiBefore.subtract(library.constants.daiDustAmount)
+                if (amountToTransfer.value > library.constants.daiDustAmount.value) {
+                    setStepStatuses(x => ({ ...x, transfer: 'in-progress' }))
+                    await library.transferGnosisNative({
+                        originPrivateKey: swapData.sessionKey,
+                        originAddress: swapData.temporaryAddress,
+                        to: Types.asHexString(swapData.targetAddress),
+                        amount: daiBefore.subtract(library.constants.daiDustAmount).toString()
+                    })
+                } else {
+                    skipNeededDueToDust = true
+                }
                 setStepStatuses(x => ({ ...x, transfer: 'done' }))
             } catch (error) {
                 setStatus('failed')
@@ -289,15 +296,19 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                 await hooks.onFatalError({ step: 'transfer', error })
                 throw error
             }
-            try {
-                setStepStatuses(x => ({ ...x, 'transfer-sync': 'in-progress' }))
-                await library.waitForGnosisNativeBalanceToDecrease(swapData.temporaryAddress, daiBefore.value)
-                setStepStatuses(x => ({ ...x, 'transfer-sync': 'done', done: 'done' }))
-            } catch (error) {
-                setStatus('failed')
-                setStepStatuses(x => ({ ...x, 'transfer-sync': 'error' }))
-                await hooks.onFatalError({ step: 'transfer-sync', error })
-                throw error
+            if (skipNeededDueToDust) {
+                setStepStatuses(x => ({ ...x, 'transfer-sync': 'skipped' }))
+            } else {
+                try {
+                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'in-progress' }))
+                    await library.waitForGnosisNativeBalanceToDecrease(swapData.temporaryAddress, daiBefore.value)
+                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'done', done: 'done' }))
+                } catch (error) {
+                    setStatus('failed')
+                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'error' }))
+                    await hooks.onFatalError({ step: 'transfer-sync', error })
+                    throw error
+                }
             }
         }
 
@@ -408,8 +419,8 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                         <div className="multichain__column multichain__column--full">
                             <TokenDisplay
                                 theme={theme}
-                                leftLabel={`${swapData.nativeAmount.toFixed(2)} xDAI`}
-                                rightLabel={`$${swapData.nativeAmount.toFixed(2)}`}
+                                leftLabel={`${neededDaiUsdValue.toFixed(2)} xDAI`}
+                                rightLabel={`$${neededDaiUsdValue.toFixed(2)}`}
                             />
                         </div>
                         <div className="multichain__column multichain__column--full">

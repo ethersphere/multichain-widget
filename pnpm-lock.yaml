@@ -24,8 +24,8 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5)
       cafe-utility:
-        specifier: ^33.3.1
-        version: 33.3.2
+        specifier: ^33.3.5
+        version: 33.3.5
       react:
         specifier: '>=19'
         version: 19.2.3
@@ -1288,8 +1288,8 @@ packages:
     resolution: {integrity: sha512-ZMANVnAixE6AWWnPzlW2KpUrxhm9woycYvPOo67jWHyFowASTEd9s+QN1EIMsSDtwhIxN4sWE1jotpuDUIgyIw==}
     engines: {node: '>=6.14.2'}
 
-  cafe-utility@33.3.2:
-    resolution: {integrity: sha512-7hn8OrmKsJ4pASe0Y9/k+DIABZcK1jkviLyQq6VM+uJQF4jMT0E+vCVkTsMyIrYDFJ21ne1HGZVP9NwDASr7jA==}
+  cafe-utility@33.3.5:
+    resolution: {integrity: sha512-kL4SHbVzG9/Sp9h+09QYlHawQXbvY6FoG/khwqhcuMGYV9pSxuNa3SogkVn/OWkcjDBC7+4By3hjr1T4K21tHA==}
 
   call-bind-apply-helpers@1.0.2:
     resolution: {integrity: sha512-Sp1ablJ0ivDkSzjcaJdxEunN5/XvksFJ2sMBFfq6x0ryhQV/2b/KwFe21cMpmHtPOSij8K99/wSfoEuTObmuMQ==}
@@ -4136,7 +4136,7 @@ snapshots:
 
   '@upcoming/multichain-library@0.5.2(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5)':
     dependencies:
-      cafe-utility: 33.3.2
+      cafe-utility: 33.3.5
       viem: 2.43.5(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@4.3.5)
     transitivePeerDependencies:
       - bufferutil
@@ -4901,7 +4901,7 @@ snapshots:
     dependencies:
       node-gyp-build: 4.8.4
 
-  cafe-utility@33.3.2: {}
+  cafe-utility@33.3.5: {}
 
   call-bind-apply-helpers@1.0.2:
     dependencies:
