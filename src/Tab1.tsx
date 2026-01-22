@@ -1,5 +1,5 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
-import { Types } from 'cafe-utility'
+import { Binary, Elliptic, Types } from 'cafe-utility'
 import { Dispatch, SetStateAction } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { IntentInfo } from './components/IntentInfo'
@@ -14,6 +14,7 @@ import { Typography } from './primitives/Typography'
 import { SwapData } from './SwapData'
 
 const LOCAL_STORAGE_KEY = 'multichain-session-key'
+const MINIMUM_XBZZ = 0.5
 
 interface Props {
     theme: MultichainTheme
@@ -27,6 +28,22 @@ interface Props {
 export function Tab1({ theme, intent, setTab, swapData, setSwapData, setInitialChainId }: Props) {
     const { address } = useAccount()
     const chainId = useChainId()
+
+    const hasEnoughBalance = swapData.bzzAmount >= MINIMUM_XBZZ
+    let malformedAddress = false
+    let wrongChecksum = false
+
+    if (swapData.targetAddress) {
+        try {
+            malformedAddress = true
+            const cleanAddress = Types.asHexString(swapData.targetAddress, { byteLength: 20 })
+            malformedAddress = false
+            if (cleanAddress.match(/[A-F]/)) {
+                const checksummed = Elliptic.checksumEncode(Binary.hexToUint8Array(cleanAddress))
+                wrongChecksum = checksummed !== swapData.targetAddress
+            }
+        } catch (e) {}
+    }
 
     function onConnect() {
         if (address && swapData.targetAddress) {
@@ -84,47 +101,54 @@ export function Tab1({ theme, intent, setTab, swapData, setSwapData, setInitialC
                 />
             </LabelSpacing>
             <div className="multichain__row">
-                <div className="multichain__column multichain__column--full">
-                    <LabelSpacing theme={theme}>
-                        <Typography theme={theme}>
-                            xDAI
-                            <Span theme={theme} color={theme.buttonBackgroundColor}>
-                                *
-                            </Span>
-                        </Typography>
-                        <NumberInput
-                            theme={theme}
-                            placeholder="0.5"
-                            max={10}
-                            min={0}
-                            value={swapData.nativeAmount}
-                            onChange={e => setSwapData(x => ({ ...x, nativeAmount: e }))}
-                        />
-                    </LabelSpacing>
-                </div>
-                <div className="multichain__column multichain__column--full">
-                    <LabelSpacing theme={theme}>
-                        <Typography theme={theme}>
-                            xBZZ
-                            <Span theme={theme} color={theme.buttonBackgroundColor}>
-                                *
-                            </Span>
-                        </Typography>
-                        <NumberInput
-                            theme={theme}
-                            placeholder="10"
-                            max={1000}
-                            min={0}
-                            value={swapData.bzzAmount}
-                            onChange={e => setSwapData(x => ({ ...x, bzzAmount: Number(e) }))}
-                        />
-                    </LabelSpacing>
-                </div>
+                <NumberInput
+                    label="xDAI"
+                    theme={theme}
+                    placeholder="0.5"
+                    max={10}
+                    min={0}
+                    value={swapData.nativeAmount}
+                    onChange={e => setSwapData(x => ({ ...x, nativeAmount: e }))}
+                />
+                <NumberInput
+                    label="xBZZ"
+                    theme={theme}
+                    placeholder="10"
+                    max={200}
+                    min={0}
+                    value={swapData.bzzAmount}
+                    onChange={e => setSwapData(x => ({ ...x, bzzAmount: Number(e) }))}
+                />
             </div>
             <ConnectButton />
-            <Button theme={theme} onClick={onConnect} disabled={!address || !swapData.targetAddress}>
+            <Button
+                theme={theme}
+                onClick={onConnect}
+                disabled={!address || !swapData.targetAddress || !hasEnoughBalance || malformedAddress || wrongChecksum}
+            >
                 Continue
             </Button>
+            {!hasEnoughBalance && (
+                <Typography theme={theme}>
+                    <Span theme={theme} color={theme.errorTextColor} small>
+                        *At least {MINIMUM_XBZZ} xBZZ is required to perform the swap.
+                    </Span>
+                </Typography>
+            )}
+            {malformedAddress && (
+                <Typography theme={theme}>
+                    <Span theme={theme} color={theme.errorTextColor} small>
+                        *Address is not a valid Ethereum address.
+                    </Span>
+                </Typography>
+            )}
+            {wrongChecksum && (
+                <Typography theme={theme}>
+                    <Span theme={theme} color={theme.errorTextColor} small>
+                        *Address has an invalid checksum. Please check and try again.
+                    </Span>
+                </Typography>
+            )}
             <Button
                 theme={theme}
                 secondary

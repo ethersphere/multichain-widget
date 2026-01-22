@@ -1,6 +1,6 @@
 {
     "name": "@upcoming/multichain-widget",
-    "version": "0.3.0",
+    "version": "0.5.0",
     "main": "dist/multichain-widget.umd.js",
     "module": "dist/multichain-widget.es.js",
     "types": "dist/index.d.ts",

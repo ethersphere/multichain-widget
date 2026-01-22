@@ -3,6 +3,7 @@ export interface MultichainTheme {
     borderRadius: string
     backgroundColor: string
     textColor: string
+    errorTextColor: string
     fontSize: string
     fontWeight: number
     fontFamily: string
@@ -32,6 +33,7 @@ export function getDefaultMultichainTheme(): MultichainTheme {
         borderRadius: '12px',
         backgroundColor: '#121212',
         textColor: '#FFFFFF',
+        errorTextColor: '#FF4D4D',
         fontSize: '16px',
         fontWeight: 700,
         fontFamily:
