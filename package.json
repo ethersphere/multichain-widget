@@ -26,7 +26,7 @@
         "@relayprotocol/relay-kit-hooks": "^2.0.6",
         "@relayprotocol/relay-sdk": "^3.0.0",
         "@tanstack/react-query": "^5.90.2",
-        "@upcoming/multichain-library": "^0.5.2",
+        "@upcoming/multichain-library": "^0.6.0",
         "cafe-utility": "^33.3.5",
         "viem": "^2.38.1",
         "wagmi": "^2.17.5"
