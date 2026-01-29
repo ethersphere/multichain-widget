@@ -11,7 +11,7 @@ const copies: Record<Intent, string> = {
     'initial-funding':
         "Your Bee node needs an initial funding on the Gnosis chain to start. You'll receive xDAI for transaction gas fees and xBZZ tokens for the storage and bandwidth costs.",
     'postage-batch':
-        'To upload data to Swarm, your Bee node requires a postage batch. You can create a new postage batch or top up an existing one with xBZZ tokens on the Gnosis chain.',
+        'To upload data to Swarm, the network requires a postage batch - analogous to renting storage. Using this widget will help you swap funds for xBZZ tokens and then proceed to create one.',
     arbitrary: 'Configure the amounts of xDAI and xBZZ tokens to suit your specific needs.'
 }
 

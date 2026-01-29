@@ -1,7 +1,7 @@
 import { useQuote, useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
 import { getClient } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
-import { Arrays, Dates, FixedPointNumber, Numbers, System, Types } from 'cafe-utility'
+import { Arrays, Dates, FixedPointNumber, Numbers, Strings, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
 import { useBalance, useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
 import { ProgressTracker } from './components/ProgressTracker'
@@ -28,7 +28,7 @@ interface Props {
     library: MultichainLibrary
 }
 
-export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }: Props) {
+export function Tab2Alt({ theme, hooks, setTab, swapData, initialChainId, library }: Props) {
     // states for user input
     const [sourceChain, setSourceChain] = useState<number>(initialChainId)
     const [sourceToken, setSourceToken] = useState<string>(library.constants.nullAddress)
@@ -36,7 +36,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     // states for network data
     const [bzzUsdPrice, setBzzUsdPrice] = useState<number | null>(null)
     const [temporaryWalletNativeBalance, setTemporaryWalletNativeBalance] = useState<FixedPointNumber | null>(null)
-    const [destinationWalletBzzBalance, setDestinationWalletBzzBalance] = useState<FixedPointNumber | null>(null)
+    const [temporaryWalletBzzBalance, setTemporaryWalletBzzBalance] = useState<FixedPointNumber | null>(null)
     const [selectedTokenUsdPrice, setSelectedTokenUsdPrice] = useState<number | null>(null)
 
     // states for flow status
@@ -50,6 +50,9 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
         'transfer-sync': 'pending',
         done: 'pending'
     })
+
+    // states for output
+    const [batchId, setBatchId] = useState<string | null>(null)
 
     // relay and wagmi hooks
     const relayClient = getClient()
@@ -88,6 +91,9 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             ? parseFloat(temporaryWalletNativeBalance?.toDecimalString()) >= totalNeededUsdValue
             : null
     const nextStep: 'sushi' | 'relay' | null = hasEnoughDai ? 'sushi' : 'relay'
+
+    console.log({ nextStep })
+
     const hasSufficientBalance =
         selectedTokenAmountNeeded &&
         selectedTokenBalance.data &&
@@ -106,7 +112,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
         originCurrency: sourceToken,
         destinationCurrency: library.constants.nullAddress, // xDAI
         tradeType: 'EXACT_INPUT',
-        amount: selectedTokenAmountNeeded?.toString() || '0'
+        amount: selectedTokenAmountNeeded?.toString() || neededBzzAmount.toString()
     })
     // send transaction hook in case of xdai source token
     const { sendTransactionAsync } = useSendTransaction()
@@ -132,8 +138,8 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             }, Dates.seconds(30)),
             System.runAndSetInterval(() => {
                 library
-                    .getGnosisBzzBalance(swapData.targetAddress)
-                    .then(balance => setDestinationWalletBzzBalance(balance))
+                    .getGnosisBzzBalance(swapData.temporaryAddress)
+                    .then(balance => setTemporaryWalletBzzBalance(balance))
                     .catch(error => {
                         console.error('Error fetching destination wallet BZZ balance:', error)
                     })
@@ -172,10 +178,11 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             console.error('Temporary wallet native balance not loaded yet')
             return
         }
-        if (!destinationWalletBzzBalance) {
+        if (!temporaryWalletBzzBalance) {
             console.error('Destination wallet BZZ balance not loaded yet')
             return
         }
+
         const stepsToRun: MultichainStep[] =
             nextStep === 'relay' ? ['relay', 'sushi', 'transfer'] : nextStep === 'sushi' ? ['sushi', 'transfer'] : []
 
@@ -241,7 +248,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
 
         // sushi step
         if (stepsToRun.includes('sushi')) {
-            const bzzBefore = destinationWalletBzzBalance.value
+            const bzzBefore = temporaryWalletBzzBalance.value
             const daiBefore = (await library.getGnosisNativeBalance(swapData.temporaryAddress)).value
             try {
                 setStepStatuses(x => ({ ...x, sushi: 'in-progress' }))
@@ -249,7 +256,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                 await library.swapOnGnosisAuto({
                     amount: amount.toString(),
                     originPrivateKey: swapData.sessionKey,
-                    to: Types.asHexString(swapData.targetAddress)
+                    to: swapData.temporaryAddress
                 })
                 setStepStatuses(x => ({ ...x, sushi: 'done' }))
             } catch (error) {
@@ -260,7 +267,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             }
             try {
                 setStepStatuses(x => ({ ...x, 'sushi-sync': 'in-progress' }))
-                await library.waitForGnosisBzzBalanceToIncrease(swapData.targetAddress, bzzBefore)
+                await library.waitForGnosisBzzBalanceToIncrease(swapData.temporaryAddress, bzzBefore)
                 await library.waitForGnosisNativeBalanceToDecrease(swapData.temporaryAddress, daiBefore)
                 setStepStatuses(x => ({ ...x, 'sushi-sync': 'done' }))
             } catch (error) {
@@ -273,40 +280,25 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
 
         // transfer step
         if (stepsToRun.includes('transfer')) {
-            const daiBefore = await library.getGnosisNativeBalance(swapData.temporaryAddress)
-            let skipNeededDueToDust = false
-            try {
-                const amountToTransfer = daiBefore.subtract(library.constants.daiDustAmount)
-                if (amountToTransfer.value > library.constants.daiDustAmount.value) {
-                    setStepStatuses(x => ({ ...x, transfer: 'in-progress' }))
-                    await library.transferGnosisNative({
-                        originPrivateKey: swapData.sessionKey,
-                        to: Types.asHexString(swapData.targetAddress),
-                        amount: daiBefore.subtract(library.constants.daiDustAmount).toString()
-                    })
-                } else {
-                    skipNeededDueToDust = true
-                }
-                setStepStatuses(x => ({ ...x, transfer: 'done' }))
-            } catch (error) {
-                setStatus('failed')
-                setStepStatuses(x => ({ ...x, transfer: 'error' }))
-                await hooks.onFatalError({ step: 'transfer', error })
-                throw error
-            }
-            if (skipNeededDueToDust) {
-                setStepStatuses(x => ({ ...x, 'transfer-sync': 'skipped' }))
-            } else {
-                try {
-                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'in-progress' }))
-                    await library.waitForGnosisNativeBalanceToDecrease(swapData.temporaryAddress, daiBefore.value)
-                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'done', done: 'done' }))
-                } catch (error) {
-                    setStatus('failed')
-                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'error' }))
-                    await hooks.onFatalError({ step: 'transfer-sync', error })
-                    throw error
-                }
+            if (swapData.batchAmount && swapData.batchDepth) {
+                const nonce = await library.getGnosisTransactionCount(swapData.temporaryAddress)
+                await library.approveGnosisBzz({
+                    amount: FixedPointNumber.fromDecimalString('1000', 16).toString(),
+                    spender: library.constants.postageStampGnosisAddress,
+                    originPrivateKey: swapData.sessionKey,
+                    nonce
+                })
+                const batchId = await library.createBatchGnosis({
+                    amount: swapData.batchAmount,
+                    depth: swapData.batchDepth,
+                    originPrivateKey: swapData.sessionKey,
+                    immutable: false,
+                    batchNonce: `0x${Strings.randomHex(64)}` as `0x${string}`,
+                    bucketDepth: 16,
+                    owner: Types.asHexString(swapData.targetAddress),
+                    nonce: nonce + 1
+                })
+                setBatchId(batchId)
             }
         }
 
@@ -339,7 +331,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     <ProgressTracker theme={theme} progress={stepStatuses} />
                 </>
             ) : null}
-            {status === 'pending' && nextStep === 'relay' ? (
+            {status === 'pending' && (nextStep === 'relay' || nextStep === 'sushi') ? (
                 <>
                     <LabelSpacing theme={theme}>
                         <Typography theme={theme}>
@@ -438,6 +430,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             {status === 'pending' && nextStep === 'relay' ? (
                 <QuoteIndicator isLoading={isLoading} theme={theme} quote={quote} />
             ) : null}
+            {batchId !== null ? <Typography theme={theme}>Created Batch ID: {batchId}</Typography> : null}
             <Button
                 theme={theme}
                 onClick={onSwap}

@@ -1,12 +1,11 @@
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Binary, Elliptic, Strings, Types } from 'cafe-utility'
 import { useState } from 'react'
-import { Intent } from './Intent'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainTheme } from './MultichainTheme'
 import { SwapData } from './SwapData'
-import { Tab1 } from './Tab1'
-import { Tab2 } from './Tab2'
+import { Tab1Alt } from './Tab1Alt'
+import { Tab2Alt } from './Tab2Alt'
 
 const LOCAL_STORAGE_KEY = 'multichain-session-key'
 
@@ -14,13 +13,12 @@ interface Props {
     theme: MultichainTheme
     hooks: MultichainHooks
     library: MultichainLibrary
-    intent: Intent
     destination: string
     dai: number
     bzz: number
 }
 
-export function Router({ theme, hooks, library, intent, destination, dai, bzz }: Props) {
+export function Router({ theme, hooks, library, destination, dai, bzz }: Props) {
     const sessionKey = Types.asHexString(localStorage.getItem(LOCAL_STORAGE_KEY) || Strings.randomHex(64))
     if (localStorage.getItem(LOCAL_STORAGE_KEY) !== sessionKey) {
         localStorage.setItem(LOCAL_STORAGE_KEY, sessionKey)
@@ -46,10 +44,10 @@ export function Router({ theme, hooks, library, intent, destination, dai, bzz }:
 
     if (tab === 1 || initialChainId === null) {
         return (
-            <Tab1
+            <Tab1Alt
+                library={library}
                 setTab={setTab}
                 theme={theme}
-                intent={intent}
                 swapData={swapData}
                 setSwapData={setSwapData}
                 setInitialChainId={setInitialChainId}
@@ -58,7 +56,7 @@ export function Router({ theme, hooks, library, intent, destination, dai, bzz }:
     }
 
     return (
-        <Tab2
+        <Tab2Alt
             setTab={setTab}
             theme={theme}
             hooks={hooks}
