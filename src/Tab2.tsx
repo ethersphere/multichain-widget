@@ -249,7 +249,6 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                 await library.swapOnGnosisAuto({
                     amount: amount.toString(),
                     originPrivateKey: swapData.sessionKey,
-                    originAddress: swapData.temporaryAddress,
                     to: Types.asHexString(swapData.targetAddress)
                 })
                 setStepStatuses(x => ({ ...x, sushi: 'done' }))
@@ -282,7 +281,6 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     setStepStatuses(x => ({ ...x, transfer: 'in-progress' }))
                     await library.transferGnosisNative({
                         originPrivateKey: swapData.sessionKey,
-                        originAddress: swapData.temporaryAddress,
                         to: Types.asHexString(swapData.targetAddress),
                         amount: daiBefore.subtract(library.constants.daiDustAmount).toString()
                     })
