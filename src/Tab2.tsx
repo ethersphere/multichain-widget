@@ -1,7 +1,7 @@
-import { useQuote, useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
-import { getClient } from '@relayprotocol/relay-sdk'
+import { useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
+import { Execute, getClient } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
-import { Arrays, Dates, FixedPointNumber, Numbers, Objects, System, Types } from 'cafe-utility'
+import { Arrays, Cache, Dates, FixedPointNumber, Numbers, Objects, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
 import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
 import { getBalance } from 'wagmi/actions'
@@ -47,6 +47,11 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     const [destinationWalletBzzBalance, setDestinationWalletBzzBalance] = useState<FixedPointNumber | null>(null)
     const [selectedTokenBalance, setSelectedTokenBalance] = useState<Balance | null>(null)
     const [selectedTokenUsdPrice, setSelectedTokenUsdPrice] = useState<number | null>(null)
+    const [selectedTokenAmountNeeded, setSelectedTokenAmountNeeded] = useState<FixedPointNumber | null>(null)
+
+    // quote state
+    const [loadingRelayQuote, setLoadingRelayQuote] = useState<boolean>(true)
+    const [relayQuote, setRelayQuote] = useState<Execute | null>(null)
 
     // states for flow status
     const [status, setStatus] = useState<'pending' | 'running' | 'failed' | 'done'>('pending')
@@ -67,51 +72,32 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     const configuredChains = useChains()
     const chains =
         relayChains && configuredChains ? relayChains.filter(x => configuredChains.some(y => x.id === y.id)) : []
-    const { data } = useTokenList('https://api.relay.link', { chainIds: [sourceChain] })
+    const { data: tokenList } = useTokenList('https://api.relay.link', { chainIds: [sourceChain] })
     const { switchChainAsync } = useSwitchChain()
 
     // computed
     const sourceChainDisplayName = chains.find(x => x.id === sourceChain)?.displayName || 'N/A'
-    const sourceTokenObject = (data || []).find(x => x.address === sourceToken)
+    const sourceTokenObject = (tokenList || []).find(x => x.address === sourceToken)
     const sourceTokenDisplayName = sourceTokenObject ? sourceTokenObject.symbol : 'N/A'
     const neededBzzAmount = FixedPointNumber.fromDecimalString(swapData.bzzAmount.toString(), 16)
     let neededBzzUsdValue: number | null = null
     const neededDaiUsdValue = swapData.nativeAmount + parseFloat(library.constants.daiDustAmount.toDecimalString())
     let totalNeededUsdValue: number | null = null
-    let selectedTokenAmountNeeded: FixedPointNumber | null = null
     if (bzzUsdPrice && selectedTokenUsdPrice && sourceTokenObject?.decimals) {
         neededBzzUsdValue = parseFloat(neededBzzAmount.toDecimalString()) * bzzUsdPrice
         totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
-        selectedTokenAmountNeeded = FixedPointNumber.fromDecimalString(
-            (totalNeededUsdValue / selectedTokenUsdPrice).toString(),
-            sourceTokenObject.decimals
-        )
     }
     const hasEnoughDai: boolean | null =
         totalNeededUsdValue && temporaryWalletNativeBalance !== null
             ? parseFloat(temporaryWalletNativeBalance?.toDecimalString()) >= totalNeededUsdValue
             : null
     const nextStep: 'sushi' | 'relay' | null = hasEnoughDai ? 'sushi' : 'relay'
-    const hasSufficientBalance =
-        selectedTokenAmountNeeded &&
-        selectedTokenBalance &&
-        selectedTokenAmountNeeded.value <= selectedTokenBalance.value
+    const hasSufficientBalance = selectedTokenBalance
+        ? selectedTokenAmountNeeded &&
+          selectedTokenBalance &&
+          selectedTokenAmountNeeded.value <= selectedTokenBalance.value
+        : true
 
-    // relay quote hook
-    const {
-        data: quote,
-        executeQuote,
-        isLoading
-    } = useQuote(relayClient ?? undefined, walletClient.data, {
-        user: swapData.sourceAddress,
-        recipient: swapData.temporaryAddress,
-        originChainId: sourceChain,
-        destinationChainId: library.constants.gnosisChainId,
-        originCurrency: sourceToken,
-        destinationCurrency: library.constants.nullAddress, // xDAI
-        tradeType: 'EXACT_INPUT',
-        amount: selectedTokenAmountNeeded?.toString() || '0'
-    })
     // send transaction hook in case of xdai source token
     const { sendTransactionAsync } = useSendTransaction()
 
@@ -133,7 +119,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     .catch(error => {
                         console.error('Error fetching temporary wallet native balance:', error)
                     })
-            }, Dates.minutes(30)),
+            }, Dates.seconds(30)),
             System.runAndSetInterval(() => {
                 library
                     .getGnosisBzzBalance(swapData.targetAddress)
@@ -145,12 +131,33 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
         ])
     }, [])
 
-    // watch selected token price and balance
+    useEffect(() => {
+        if (!tokenList) {
+            return
+        }
+        const sourceTokenObject: { decimals?: number } | undefined = tokenList.find(x => x.address === sourceToken)
+        if (!sourceTokenObject) {
+            return
+        }
+        if (bzzUsdPrice && selectedTokenUsdPrice && sourceTokenObject.decimals) {
+            const neededDaiUsdValue =
+                swapData.nativeAmount + parseFloat(library.constants.daiDustAmount.toDecimalString())
+            const neededBzzUsdValue = parseFloat(neededBzzAmount.toDecimalString()) * bzzUsdPrice
+            const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1
+            setSelectedTokenAmountNeeded(
+                FixedPointNumber.fromDecimalString(
+                    (totalNeededUsdValue / selectedTokenUsdPrice).toString(),
+                    sourceTokenObject.decimals
+                )
+            )
+        }
+    }, [bzzUsdPrice, selectedTokenUsdPrice, tokenList, sourceToken])
+
+    // watch selected token price, balance and quote
     useEffect(() => {
         if (!sourceToken) {
             return
         }
-        setSelectedTokenBalance(null)
         return Arrays.multicall([
             System.runAndSetInterval(() => {
                 library
@@ -172,9 +179,36 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                 } catch (error) {
                     console.error('Error fetching selected token balance:', error)
                 }
-            }, Dates.minutes(1))
+            }, Dates.minutes(1)),
+            System.runAndSetInterval(async () => {
+                if (!selectedTokenAmountNeeded) {
+                    setRelayQuote(null)
+                    setLoadingRelayQuote(true)
+                    return
+                } else {
+                    const quoteConfiguration = {
+                        user: swapData.sourceAddress,
+                        recipient: swapData.temporaryAddress,
+                        chainId: sourceChain,
+                        toChainId: library.constants.gnosisChainId,
+                        currency: sourceToken,
+                        toCurrency: library.constants.nullAddress, // xDAI
+                        tradeType: 'EXACT_INPUT' as const,
+                        amount: selectedTokenAmountNeeded.toString()
+                    }
+                    const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.seconds(30), async () => {
+                        setRelayQuote(null)
+                        setLoadingRelayQuote(true)
+                        const quote = await relayClient.actions.getQuote(quoteConfiguration)
+                        console.log('Quote fetched:', quote)
+                        return quote
+                    })
+                    setRelayQuote(quote)
+                    setLoadingRelayQuote(false)
+                }
+            }, Dates.seconds(2))
         ])
-    }, [sourceChain, sourceToken])
+    }, [sourceChain, sourceToken, setRelayQuote, setLoadingRelayQuote, selectedTokenAmountNeeded])
 
     function onBack() {
         setTab(1)
@@ -242,10 +276,14 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                 }
             } else {
                 // any other source token/chain
-                if (quote && executeQuote) {
+                if (relayQuote && walletClient.data) {
                     try {
                         setStepStatuses(x => ({ ...x, relay: 'in-progress' }))
-                        await executeQuote(console.log)
+                        await relayClient.actions.execute({
+                            quote: relayQuote,
+                            wallet: walletClient.data,
+                            onProgress: console.log
+                        })
                         setStepStatuses(x => ({ ...x, relay: 'done' }))
                     } catch (error) {
                         setStatus('failed')
@@ -385,6 +423,9 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                             onChange={e => {
                                 setSourceChain(Number(e))
                                 setSourceToken('0x0000000000000000000000000000000000000000')
+                                setSelectedTokenBalance(null)
+                                setSelectedTokenUsdPrice(null)
+                                setSelectedTokenAmountNeeded(null)
                             }}
                             onChangeGuard={async chainId => {
                                 try {
@@ -415,9 +456,14 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                         </Typography>
                         <AdvancedSelect
                             theme={theme}
-                            onChange={e => setSourceToken(e)}
+                            onChange={e => {
+                                setSelectedTokenBalance(null)
+                                setSelectedTokenUsdPrice(null)
+                                setSelectedTokenAmountNeeded(null)
+                                setSourceToken(e)
+                            }}
                             value={sourceToken}
-                            options={(data || [])
+                            options={(tokenList || [])
                                 .filter(x => x.address)
                                 .map(x => ({
                                     value: x.address!,
@@ -468,12 +514,17 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                 </>
             ) : null}
             {status === 'pending' && nextStep === 'relay' ? (
-                <QuoteIndicator isLoading={isLoading} theme={theme} quote={quote} />
+                <QuoteIndicator isLoading={loadingRelayQuote} theme={theme} quote={relayQuote} />
             ) : null}
             <Button
                 theme={theme}
                 onClick={onSwapWithErrorHandling}
-                disabled={status !== 'pending' || (nextStep === 'relay' && !quote) || !hasSufficientBalance}
+                disabled={
+                    status !== 'pending' ||
+                    (nextStep === 'relay' && !relayQuote) ||
+                    !hasSufficientBalance ||
+                    !walletClient.data
+                }
             >
                 {hasSufficientBalance ? 'Fund' : 'Insufficient balance'}
             </Button>
