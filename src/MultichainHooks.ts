@@ -4,6 +4,7 @@ export interface MultichainHooks {
     beforeTransactionStart: (temporaryPrivateKey: string) => Promise<void>
     onFatalError: (error: MultichainErrorWrapper) => Promise<void>
     onCompletion: () => Promise<void>
+    onUserAbort: () => Promise<void>
 }
 
 export function getDefaultHooks(): MultichainHooks {
@@ -16,6 +17,9 @@ export function getDefaultHooks(): MultichainHooks {
         },
         onCompletion: async () => {
             console.log('Multichain transaction completed successfully!')
+        },
+        onUserAbort: async () => {
+            console.log('Multichain transaction was aborted by the user.')
         }
     }
 }

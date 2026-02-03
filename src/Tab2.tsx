@@ -1,12 +1,14 @@
 import { useQuote, useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
 import { getClient } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
-import { Arrays, Dates, FixedPointNumber, Numbers, System, Types } from 'cafe-utility'
+import { Arrays, Dates, FixedPointNumber, Numbers, Objects, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
-import { useBalance, useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
+import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
+import { getBalance } from 'wagmi/actions'
 import { ProgressTracker } from './components/ProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
+import { config } from './Config'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainProgress, MultichainStep } from './MultichainStep'
 import { MultichainTheme } from './MultichainTheme'
@@ -28,6 +30,12 @@ interface Props {
     library: MultichainLibrary
 }
 
+interface Balance {
+    symbol: string
+    decimals: number
+    value: bigint
+}
+
 export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }: Props) {
     // states for user input
     const [sourceChain, setSourceChain] = useState<number>(initialChainId)
@@ -37,6 +45,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     const [bzzUsdPrice, setBzzUsdPrice] = useState<number | null>(null)
     const [temporaryWalletNativeBalance, setTemporaryWalletNativeBalance] = useState<FixedPointNumber | null>(null)
     const [destinationWalletBzzBalance, setDestinationWalletBzzBalance] = useState<FixedPointNumber | null>(null)
+    const [selectedTokenBalance, setSelectedTokenBalance] = useState<Balance | null>(null)
     const [selectedTokenUsdPrice, setSelectedTokenUsdPrice] = useState<number | null>(null)
 
     // states for flow status
@@ -60,11 +69,6 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
         relayChains && configuredChains ? relayChains.filter(x => configuredChains.some(y => x.id === y.id)) : []
     const { data } = useTokenList('https://api.relay.link', { chainIds: [sourceChain] })
     const { switchChainAsync } = useSwitchChain()
-    const selectedTokenBalance = useBalance({
-        address: swapData.sourceAddress as `0x${string}`,
-        token: sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`),
-        chainId: sourceChain
-    })
 
     // computed
     const sourceChainDisplayName = chains.find(x => x.id === sourceChain)?.displayName || 'N/A'
@@ -90,8 +94,8 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     const nextStep: 'sushi' | 'relay' | null = hasEnoughDai ? 'sushi' : 'relay'
     const hasSufficientBalance =
         selectedTokenAmountNeeded &&
-        selectedTokenBalance.data &&
-        selectedTokenAmountNeeded.value <= selectedTokenBalance.data.value
+        selectedTokenBalance &&
+        selectedTokenAmountNeeded.value <= selectedTokenBalance.value
 
     // relay quote hook
     const {
@@ -129,7 +133,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     .catch(error => {
                         console.error('Error fetching temporary wallet native balance:', error)
                     })
-            }, Dates.seconds(30)),
+            }, Dates.minutes(30)),
             System.runAndSetInterval(() => {
                 library
                     .getGnosisBzzBalance(swapData.targetAddress)
@@ -141,11 +145,12 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
         ])
     }, [])
 
-    // watch selected token price
+    // watch selected token price and balance
     useEffect(() => {
         if (!sourceToken) {
             return
         }
+        setSelectedTokenBalance(null)
         return Arrays.multicall([
             System.runAndSetInterval(() => {
                 library
@@ -154,12 +159,39 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     .catch(error => {
                         console.error('Error fetching selected token price:', error)
                     })
+            }, Dates.minutes(1)),
+            System.runAndSetInterval(async () => {
+                try {
+                    const balance = await getBalance(config, {
+                        address: swapData.sourceAddress as `0x${string}`,
+                        token:
+                            sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`),
+                        chainId: sourceChain
+                    })
+                    setSelectedTokenBalance(balance)
+                } catch (error) {
+                    console.error('Error fetching selected token balance:', error)
+                }
             }, Dates.minutes(1))
         ])
     }, [sourceChain, sourceToken])
 
     function onBack() {
         setTab(1)
+    }
+
+    async function onSwapWithErrorHandling() {
+        try {
+            await onSwap()
+        } catch (error: unknown) {
+            if (Objects.errorMatches(error, 'User rejected the request.')) {
+                hooks.onUserAbort().then(() => {
+                    setTab(1)
+                })
+            } else {
+                console.error('Swap failed:', error)
+            }
+        }
     }
 
     // main action
@@ -393,16 +425,16 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                                     image: x.metadata?.logoURI
                                 }))}
                             label={
-                                selectedTokenBalance.data
+                                selectedTokenBalance
                                     ? Numbers.toSignificantDigits(
                                           new FixedPointNumber(
-                                              selectedTokenBalance.data.value,
-                                              selectedTokenBalance.data.decimals
+                                              selectedTokenBalance.value,
+                                              selectedTokenBalance.decimals
                                           ).toDecimalString(),
                                           3
                                       ) +
                                       ' ' +
-                                      selectedTokenBalance.data.symbol
+                                      selectedTokenBalance.symbol
                                     : 'Loading...'
                             }
                         />
@@ -440,7 +472,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             ) : null}
             <Button
                 theme={theme}
-                onClick={onSwap}
+                onClick={onSwapWithErrorHandling}
                 disabled={status !== 'pending' || (nextStep === 'relay' && !quote) || !hasSufficientBalance}
             >
                 {hasSufficientBalance ? 'Fund' : 'Insufficient balance'}

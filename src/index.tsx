@@ -1,23 +1,17 @@
-import { darkTheme, getDefaultConfig, RainbowKitProvider } from '@rainbow-me/rainbowkit'
+import { darkTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit'
 import '@rainbow-me/rainbowkit/styles.css'
 import { convertViemChainToRelayChain, createClient, MAINNET_RELAY_API } from '@relayprotocol/relay-sdk'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MultichainLibrary, MultichainLibrarySettings } from '@upcoming/multichain-library'
 import { Objects } from 'cafe-utility'
-import { arbitrum, base, gnosis, mainnet, optimism, polygon } from 'viem/chains'
+import { mainnet } from 'viem/chains'
 import { WagmiProvider } from 'wagmi'
+import { config } from './Config'
 import { Intent } from './Intent'
 import { getDefaultHooks, MultichainHooks } from './MultichainHooks'
 import { getDefaultMultichainTheme, MultichainTheme } from './MultichainTheme'
 import './MultichainWidget.css'
 import { Router } from './Router'
-
-const config = getDefaultConfig({
-    appName: 'Multichain Library',
-    projectId: '5119e426ef93d637395e119c5169ad79',
-    chains: [mainnet, polygon, optimism, arbitrum, base, gnosis],
-    ssr: false
-})
 
 const queryClient = new QueryClient()
 

@@ -120,7 +120,7 @@ export function Tab1({ theme, intent, setTab, swapData, setSwapData, setInitialC
                     onChange={e => setSwapData(x => ({ ...x, bzzAmount: Number(e) }))}
                 />
             </div>
-            <ConnectButton />
+            <ConnectButton chainStatus="none" showBalance={false} />
             <Button
                 theme={theme}
                 onClick={onConnect}
