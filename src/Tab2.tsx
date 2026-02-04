@@ -168,9 +168,16 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.seconds(30), async () => {
                         setRelayQuote(null)
                         setLoadingRelayQuote(true)
-                        const quote = await relayClient.actions.getQuote(quoteConfiguration)
-                        console.log('Quote fetched:', quote)
-                        return quote
+                        try {
+                            const quote = await relayClient.actions.getQuote(quoteConfiguration)
+                            return quote
+                        } catch (error: unknown) {
+                            if (Objects.errorMatches(error, 'no routes found')) {
+                                return null
+                            } else {
+                                throw error
+                            }
+                        }
                     })
                     setRelayQuote(quote)
                     setLoadingRelayQuote(false)
