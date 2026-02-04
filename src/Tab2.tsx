@@ -265,21 +265,39 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             className="multichain__wrapper"
             style={{ borderRadius: theme.borderRadius, backgroundColor: theme.backgroundColor }}
         >
-            <Button secondary theme={theme} onClick={onBack} disabled={status !== 'pending' && status !== 'failed'}>
+            <Button
+                secondary
+                theme={theme}
+                onClick={onBack}
+                disabled={status !== 'pending' && status !== 'failed'}
+                testId="go-back"
+            >
                 Cancel
             </Button>
             <div className="multichain__row">
                 <div className="multichain__column multichain__column--full">
-                    <TextInput theme={theme} readOnly value={shortenHash(swapData.sourceAddress)} />
+                    <TextInput
+                        theme={theme}
+                        readOnly
+                        value={shortenHash(swapData.sourceAddress)}
+                        testId="readonly-source-address"
+                    />
                 </div>
-                <Typography theme={theme}>→</Typography>
+                <Typography theme={theme} testId="symbol-right">
+                    →
+                </Typography>
                 <div className="multichain__column multichain__column--full">
-                    <TextInput theme={theme} readOnly value={shortenHash(swapData.targetAddress)} />
+                    <TextInput
+                        theme={theme}
+                        readOnly
+                        value={shortenHash(swapData.targetAddress)}
+                        testId="readonly-destination-address"
+                    />
                 </div>
             </div>
             {status !== 'pending' ? (
                 <>
-                    <Typography theme={theme} small secondary>
+                    <Typography theme={theme} testId="duration-info" small secondary>
                         Please allow up to 5 minutes for the steps to complete.
                     </Typography>
                     <ProgressTracker theme={theme} progress={stepStates} />
@@ -288,7 +306,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             {status === 'pending' ? (
                 <>
                     <LabelSpacing theme={theme}>
-                        <Typography theme={theme}>
+                        <Typography theme={theme} testId="source-chain-input__label">
                             Select the Source Chain
                             <Span theme={theme} color={theme.buttonBackgroundColor}>
                                 *
@@ -321,10 +339,11 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                                 label: chain.displayName,
                                 image: chain.iconUrl
                             }))}
+                            testId="source-chain-input"
                         />
                     </LabelSpacing>
                     <LabelSpacing theme={theme}>
-                        <Typography theme={theme}>
+                        <Typography theme={theme} testId="source-token-input__label">
                             Select the Source Token
                             <Span theme={theme} color={theme.buttonBackgroundColor}>
                                 *
@@ -359,9 +378,10 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                                       selectedTokenBalance.symbol
                                     : 'Loading...'
                             }
+                            testId="source-token-input"
                         />
                     </LabelSpacing>
-                    <Typography theme={theme} small secondary>
+                    <Typography theme={theme} small secondary testId="swap-summary">
                         You will swap{' '}
                         {Numbers.toSignificantDigits(selectedTokenAmountNeeded?.toDecimalString() || '0', 3)} (~$
                         {Numbers.toSignificantDigits(totalNeededUsdValue?.toString() || '0', 2)}){' '}
@@ -373,6 +393,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                                 theme={theme}
                                 leftLabel={`${neededDaiUsdValue.toFixed(2)} xDAI`}
                                 rightLabel={`$${neededDaiUsdValue.toFixed(2)}`}
+                                testId="xdai-display"
                             />
                         </div>
                         <div className="multichain__column multichain__column--full">
@@ -384,18 +405,20 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                                         : 'Loading...'
                                 } xBZZ`}
                                 rightLabel={`$${(neededBzzUsdValue || 0).toFixed(2)}`}
+                                testId="xbzz-display"
                             />
                         </div>
                     </div>
                 </>
             ) : null}
             {status === 'pending' ? (
-                <QuoteIndicator isLoading={loadingRelayQuote} theme={theme} quote={relayQuote} />
+                <QuoteIndicator isLoading={loadingRelayQuote} theme={theme} quote={relayQuote} testId="quote-status" />
             ) : null}
             <Button
                 theme={theme}
                 onClick={onSwapWithErrorHandling}
                 disabled={status !== 'pending' || !relayQuote || !hasSufficientBalance || !walletClient.data}
+                testId="fund"
             >
                 {hasSufficientBalance ? 'Fund' : 'Insufficient balance'}
             </Button>

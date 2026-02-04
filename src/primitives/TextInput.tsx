@@ -6,9 +6,10 @@ interface Props {
     onChange?: (value: string) => void
     placeholder?: string
     readOnly?: boolean
+    testId: string
 }
 
-export function TextInput({ theme, value, onChange, placeholder, readOnly }: Props) {
+export function TextInput({ theme, value, onChange, placeholder, readOnly, testId }: Props) {
     return (
         <input
             type="text"
@@ -30,6 +31,7 @@ export function TextInput({ theme, value, onChange, placeholder, readOnly }: Pro
                 fontSize: theme.fontSize,
                 fontWeight: theme.fontWeight
             }}
+            data-test-id={testId}
         />
     )
 }

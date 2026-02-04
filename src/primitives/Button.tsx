@@ -8,9 +8,10 @@ interface Props {
     children: ReactNode
     secondary?: boolean
     tooltip?: string
+    testId: string
 }
 
-export function Button({ theme, onClick, disabled, children, secondary, tooltip }: Props) {
+export function Button({ theme, onClick, disabled, children, secondary, tooltip, testId }: Props) {
     return (
         <button
             className="multichain__button"
@@ -31,6 +32,7 @@ export function Button({ theme, onClick, disabled, children, secondary, tooltip 
                 fontWeight: theme.fontWeight
             }}
             title={tooltip}
+            data-test-id={testId}
         >
             {children}
         </button>

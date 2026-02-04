@@ -5,9 +5,10 @@ interface Props {
     theme: MultichainTheme
     leftLabel: string
     rightLabel: string
+    testId: string
 }
 
-export function TokenDisplay({ theme, leftLabel, rightLabel }: Props) {
+export function TokenDisplay({ theme, leftLabel, rightLabel, testId }: Props) {
     return (
         <div
             style={{
@@ -26,8 +27,10 @@ export function TokenDisplay({ theme, leftLabel, rightLabel }: Props) {
                 fontWeight: theme.fontWeight
             }}
         >
-            <Typography theme={theme}>{leftLabel}</Typography>
-            <Typography theme={theme} small secondary>
+            <Typography theme={theme} testId={`${testId}__left`}>
+                {leftLabel}
+            </Typography>
+            <Typography theme={theme} testId={`${testId}__right`} small secondary>
                 {rightLabel}
             </Typography>
         </div>

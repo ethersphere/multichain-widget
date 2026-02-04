@@ -5,19 +5,20 @@ interface Props {
     theme: MultichainTheme
     isLoading: boolean
     quote: unknown | null
+    testId: string
 }
 
-export function QuoteIndicator({ theme, isLoading, quote }: Props) {
+export function QuoteIndicator({ theme, isLoading, quote, testId }: Props) {
     return isLoading ? (
-        <ProgressStatus theme={theme} status="in-progress">
+        <ProgressStatus theme={theme} status="in-progress" testId={testId}>
             Loading quote...
         </ProgressStatus>
     ) : quote ? (
-        <ProgressStatus theme={theme} status="completed">
+        <ProgressStatus theme={theme} status="completed" testId={testId}>
             Quote available
         </ProgressStatus>
     ) : (
-        <ProgressStatus theme={theme} status="failed">
+        <ProgressStatus theme={theme} status="failed" testId={testId}>
             Quote unavailable - amount is either too small, large, or the token is illiquid
         </ProgressStatus>
     )

@@ -46,7 +46,9 @@ export function IntentInfo({ theme, intent }: Props) {
                     strokeLinejoin="round"
                 />
             </svg>
-            <Typography theme={theme}>{copies[intent]}</Typography>
+            <Typography theme={theme} testId="intent">
+                {copies[intent]}
+            </Typography>
         </div>
     )
 }

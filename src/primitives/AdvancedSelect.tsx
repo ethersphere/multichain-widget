@@ -9,9 +9,10 @@ interface Props {
     onChange: (value: string) => void
     onChangeGuard?: (value: string) => Promise<boolean>
     options: { image?: string | null; label: string; value: string }[]
+    testId: string
 }
 
-export function AdvancedSelect({ theme, value, label, onChange, onChangeGuard, options }: Props) {
+export function AdvancedSelect({ theme, value, label, onChange, onChangeGuard, options, testId }: Props) {
     const [open, setOpen] = useState(false)
 
     const current = options.find(o => o.value === value)
@@ -35,16 +36,19 @@ export function AdvancedSelect({ theme, value, label, onChange, onChangeGuard, o
                     fontWeight: theme.fontWeight,
                     border: 'none'
                 }}
+                data-test-id={testId}
             >
                 <div className="multichain__select-left">
                     {current && current.image ? (
                         <img src={current.image} alt={current.label} className="multichain__select-img" />
                     ) : undefined}
-                    <Typography theme={theme}>{current ? current.label : 'Loading...'}</Typography>
+                    <Typography theme={theme} testId={`${testId}__loading`}>
+                        {current ? current.label : 'Loading...'}
+                    </Typography>
                 </div>
                 <div className="multichain__row">
                     {label !== undefined ? (
-                        <Typography theme={theme} small secondary>
+                        <Typography theme={theme} testId={`${testId}__selected`} small secondary>
                             {label}
                         </Typography>
                     ) : null}
@@ -102,7 +106,9 @@ export function AdvancedSelect({ theme, value, label, onChange, onChangeGuard, o
                             {option.image ? (
                                 <img src={option.image} alt={option.label} className="multichain__select-img" />
                             ) : undefined}
-                            <Typography theme={theme}>{option.label}</Typography>
+                            <Typography theme={theme} testId={`${testId}__${option.value}`}>
+                                {option.label}
+                            </Typography>
                         </li>
                     ))}
                 </ul>

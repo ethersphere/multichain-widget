@@ -12,9 +12,10 @@ interface Props {
     min: number
     max: number
     placeholder: string
+    testId: string
 }
 
-export function NumberInput({ theme, label, value, onChange, min, max, placeholder }: Props) {
+export function NumberInput({ theme, label, value, onChange, min, max, placeholder, testId }: Props) {
     const [textValue, setTextValue] = useState<string>(value.toString())
     const [errorText, setErrorText] = useState<string | null>(null)
 
@@ -46,7 +47,7 @@ export function NumberInput({ theme, label, value, onChange, min, max, placehold
     return (
         <div className="multichain__column multichain__column--full">
             <LabelSpacing theme={theme}>
-                <Typography theme={theme}>
+                <Typography theme={theme} testId={`${testId}__label`}>
                     {label}
                     <Span theme={theme} color={theme.buttonBackgroundColor}>
                         *
@@ -76,6 +77,7 @@ export function NumberInput({ theme, label, value, onChange, min, max, placehold
                         fontSize: theme.fontSize,
                         fontWeight: theme.fontWeight
                     }}
+                    data-test-id={testId}
                 />
             </LabelSpacing>
         </div>

@@ -1,8 +1,9 @@
 interface Props {
     color: string
+    testId: string
 }
 
-export function StatusIndicator({ color }: Props) {
+export function StatusIndicator({ color, testId }: Props) {
     return (
         <span
             style={{
@@ -14,6 +15,7 @@ export function StatusIndicator({ color }: Props) {
                 borderRadius: 16,
                 backgroundColor: `${color}55`
             }}
+            data-test-id={testId}
         >
             <span
                 style={{
