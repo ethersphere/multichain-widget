@@ -291,7 +291,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                         theme={theme}
                         readOnly
                         value={shortenHash(swapData.targetAddress)}
-                        testId="readonly-destination-address"
+                        testId="readonly-target-address"
                     />
                 </div>
             </div>
