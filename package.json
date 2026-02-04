@@ -1,6 +1,6 @@
 {
     "name": "@upcoming/multichain-widget",
-    "version": "0.6.1",
+    "version": "0.6.2",
     "main": "dist/multichain-widget.umd.js",
     "module": "dist/multichain-widget.es.js",
     "types": "dist/index.d.ts",
@@ -26,7 +26,7 @@
         "@relayprotocol/relay-kit-hooks": "^2.0.6",
         "@relayprotocol/relay-sdk": "^3.0.0",
         "@tanstack/react-query": "^5.90.2",
-        "@upcoming/multichain-library": "^0.6.0",
+        "@upcoming/multichain-library": "^0.6.1",
         "cafe-utility": "^33.4.0",
         "viem": "^2.38.1",
         "wagmi": "^2.17.5"
