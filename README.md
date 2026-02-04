@@ -122,6 +122,7 @@ We use SushiSwap contracts and its API to swap xDAI to xBZZ.
 -   `data-test-id="xbzz-display__left"` (e.g. "0.500 xBZZ")
 -   `data-test-id="xbzz-display__right"` (e.g. "$0.06")
 -   `data-test-id="quote-status"`
+-   `data-test-id="quote-status__description"` (e.g. "Quote available")
 -   `data-test-id="fund"`
 
 #### Conditional
