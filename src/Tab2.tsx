@@ -9,8 +9,8 @@ import { ProgressTracker } from './components/ProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
 import { config } from './Config'
+import { createFlow } from './Flow'
 import { MultichainHooks } from './MultichainHooks'
-import { MultichainProgress, MultichainStep } from './MultichainStep'
 import { MultichainTheme } from './MultichainTheme'
 import { AdvancedSelect } from './primitives/AdvancedSelect'
 import { Button } from './primitives/Button'
@@ -43,8 +43,6 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
 
     // states for network data
     const [bzzUsdPrice, setBzzUsdPrice] = useState<number | null>(null)
-    const [temporaryWalletNativeBalance, setTemporaryWalletNativeBalance] = useState<FixedPointNumber | null>(null)
-    const [destinationWalletBzzBalance, setDestinationWalletBzzBalance] = useState<FixedPointNumber | null>(null)
     const [selectedTokenBalance, setSelectedTokenBalance] = useState<Balance | null>(null)
     const [selectedTokenUsdPrice, setSelectedTokenUsdPrice] = useState<number | null>(null)
     const [selectedTokenAmountNeeded, setSelectedTokenAmountNeeded] = useState<FixedPointNumber | null>(null)
@@ -54,16 +52,10 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     const [relayQuote, setRelayQuote] = useState<Execute | null>(null)
 
     // states for flow status
-    const [status, setStatus] = useState<'pending' | 'running' | 'failed' | 'done'>('pending')
-    const [stepStatuses, setStepStatuses] = useState<MultichainProgress>({
-        relay: 'pending',
-        'relay-sync': 'pending',
-        sushi: 'pending',
-        'sushi-sync': 'pending',
-        transfer: 'pending',
-        'transfer-sync': 'pending',
-        done: 'pending'
-    })
+    const [status, setStatus] = useState<'pending' | 'in-progress' | 'completed' | 'failed'>('pending')
+    const [stepStates, setStepStates] = useState<
+        Record<string, 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped'>
+    >({})
 
     // relay and wagmi hooks
     const relayClient = getClient()
@@ -87,11 +79,6 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
         neededBzzUsdValue = parseFloat(neededBzzAmount.toDecimalString()) * bzzUsdPrice
         totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
     }
-    const hasEnoughDai: boolean | null =
-        totalNeededUsdValue && temporaryWalletNativeBalance !== null
-            ? parseFloat(temporaryWalletNativeBalance?.toDecimalString()) >= totalNeededUsdValue
-            : null
-    const nextStep: 'sushi' | 'relay' | null = hasEnoughDai ? 'sushi' : 'relay'
     const hasSufficientBalance = selectedTokenBalance
         ? selectedTokenAmountNeeded &&
           selectedTokenBalance &&
@@ -101,34 +88,16 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     // send transaction hook in case of xdai source token
     const { sendTransactionAsync } = useSendTransaction()
 
-    // watch bzz price, temp. dai balance and dest. bzz balance
+    // watch bzz price
     useEffect(() => {
-        return Arrays.multicall([
-            System.runAndSetInterval(() => {
-                library
-                    .getGnosisBzzTokenPrice()
-                    .then(price => setBzzUsdPrice(price))
-                    .catch(error => {
-                        console.error('Error fetching BZZ price:', error)
-                    })
-            }, Dates.minutes(1)),
-            System.runAndSetInterval(() => {
-                library
-                    .getGnosisNativeBalance(swapData.temporaryAddress)
-                    .then(balance => setTemporaryWalletNativeBalance(balance))
-                    .catch(error => {
-                        console.error('Error fetching temporary wallet native balance:', error)
-                    })
-            }, Dates.seconds(30)),
-            System.runAndSetInterval(() => {
-                library
-                    .getGnosisBzzBalance(swapData.targetAddress)
-                    .then(balance => setDestinationWalletBzzBalance(balance))
-                    .catch(error => {
-                        console.error('Error fetching destination wallet BZZ balance:', error)
-                    })
-            }, Dates.seconds(30))
-        ])
+        return System.runAndSetInterval(() => {
+            library
+                .getGnosisBzzTokenPrice()
+                .then(price => setBzzUsdPrice(price))
+                .catch(error => {
+                    console.error('Error fetching BZZ price:', error)
+                })
+        }, Dates.minutes(1))
     }, [])
 
     useEffect(() => {
@@ -234,154 +203,54 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             console.error('BZZ price not loaded yet')
             return
         }
-        if (!temporaryWalletNativeBalance) {
-            console.error('Temporary wallet native balance not loaded yet')
-            return
-        }
-        if (!destinationWalletBzzBalance) {
-            console.error('Destination wallet BZZ balance not loaded yet')
-            return
-        }
-        const stepsToRun: MultichainStep[] =
-            nextStep === 'relay' ? ['relay', 'sushi', 'transfer'] : nextStep === 'sushi' ? ['sushi', 'transfer'] : []
 
-        setStepStatuses({
-            relay: stepsToRun.includes('relay') ? 'pending' : 'skipped',
-            'relay-sync': stepsToRun.includes('relay') ? 'pending' : 'skipped',
-            sushi: stepsToRun.includes('sushi') ? 'pending' : 'skipped',
-            'sushi-sync': stepsToRun.includes('sushi') ? 'pending' : 'skipped',
-            transfer: stepsToRun.includes('transfer') ? 'pending' : 'skipped',
-            'transfer-sync': stepsToRun.includes('transfer') ? 'pending' : 'skipped',
-            done: 'pending'
+        if (!relayQuote) {
+            console.error('Relay quote not loaded yet')
+            return
+        }
+
+        if (!selectedTokenAmountNeeded) {
+            console.error('Selected token amount needed not calculated yet')
+            return
+        }
+
+        if (!walletClient.data) {
+            console.error('Wallet client not available')
+            return
+        }
+
+        const solver = createFlow({
+            library,
+            relayQuote,
+            sourceChain,
+            sourceToken,
+            sourceTokenAmount: selectedTokenAmountNeeded,
+            sendTransactionAsync,
+            targetAddress: Types.asHexString(swapData.targetAddress),
+            temporaryAddress: Types.asHexString(swapData.temporaryAddress),
+            temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
+            bzzUsdValue: neededBzzUsdValue,
+            relayClient,
+            walletClient: walletClient.data
         })
-        setStatus('running')
 
-        // relay step
-        if (stepsToRun.includes('relay')) {
-            const daiBefore = temporaryWalletNativeBalance.value
-            if (sourceToken === library.constants.nullAddress && sourceChain === library.constants.gnosisChainId) {
-                // xdai on gnosis chain
-                try {
-                    setStepStatuses(x => ({ ...x, relay: 'in-progress' }))
-                    await sendTransactionAsync({
-                        to: swapData.temporaryAddress as `0x${string}`,
-                        value: selectedTokenAmountNeeded?.value
-                    })
-                    setStepStatuses(x => ({ ...x, relay: 'done' }))
-                } catch (error) {
-                    setStatus('failed')
-                    setStepStatuses(x => ({ ...x, relay: 'error' }))
-                    hooks.onFatalError({ step: 'relay', error })
-                    throw error
-                }
-            } else {
-                // any other source token/chain
-                if (relayQuote && walletClient.data) {
-                    try {
-                        setStepStatuses(x => ({ ...x, relay: 'in-progress' }))
-                        await relayClient.actions.execute({
-                            quote: relayQuote,
-                            wallet: walletClient.data,
-                            onProgress: console.log
-                        })
-                        setStepStatuses(x => ({ ...x, relay: 'done' }))
-                    } catch (error) {
-                        setStatus('failed')
-                        setStepStatuses(x => ({ ...x, relay: 'error' }))
-                        hooks.onFatalError({ step: 'relay', error })
-                        throw error
-                    }
-                } else {
-                    alert('Quote not available, cannot continue.')
-                    setStatus('failed')
-                    return
-                }
+        solver.setHooks({
+            onStatusChange: async newStatus => {
+                setStatus(newStatus)
+            },
+            onStepChange: async stepStates => {
+                setStepStates(stepStates)
+            },
+            onError: async error => {
+                console.error('Swap flow error:', error)
+                await hooks.onFatalError(error)
+            },
+            onFinish: async () => {
+                await hooks.onCompletion()
             }
-            try {
-                setStepStatuses(x => ({ ...x, 'relay-sync': 'in-progress' }))
-                await library.waitForGnosisNativeBalanceToIncrease(swapData.temporaryAddress, daiBefore)
-                setStepStatuses(x => ({ ...x, 'relay-sync': 'done' }))
-            } catch (error) {
-                setStatus('failed')
-                setStepStatuses(x => ({ ...x, 'relay-sync': 'error' }))
-                await hooks.onFatalError({ step: 'relay-sync', error })
-                throw error
-            }
-        }
+        })
 
-        // sushi step
-        if (stepsToRun.includes('sushi')) {
-            const bzzBefore = destinationWalletBzzBalance.value
-            const daiBefore = (await library.getGnosisNativeBalance(swapData.temporaryAddress)).value
-            try {
-                setStepStatuses(x => ({ ...x, sushi: 'in-progress' }))
-                const amount = FixedPointNumber.fromDecimalString(neededBzzUsdValue.toString(), 18)
-                await library.swapOnGnosisAuto({
-                    amount: amount.toString(),
-                    originPrivateKey: swapData.sessionKey,
-                    to: Types.asHexString(swapData.targetAddress)
-                })
-                setStepStatuses(x => ({ ...x, sushi: 'done' }))
-            } catch (error) {
-                setStatus('failed')
-                setStepStatuses(x => ({ ...x, sushi: 'error' }))
-                await hooks.onFatalError({ step: 'sushi', error })
-                throw error
-            }
-            try {
-                setStepStatuses(x => ({ ...x, 'sushi-sync': 'in-progress' }))
-                await library.waitForGnosisBzzBalanceToIncrease(swapData.targetAddress, bzzBefore)
-                await library.waitForGnosisNativeBalanceToDecrease(swapData.temporaryAddress, daiBefore)
-                setStepStatuses(x => ({ ...x, 'sushi-sync': 'done' }))
-            } catch (error) {
-                setStatus('failed')
-                setStepStatuses(x => ({ ...x, 'sushi-sync': 'error' }))
-                await hooks.onFatalError({ step: 'sushi-sync', error })
-                throw error
-            }
-        }
-
-        // transfer step
-        if (stepsToRun.includes('transfer')) {
-            const daiBefore = await library.getGnosisNativeBalance(swapData.temporaryAddress)
-            let skipNeededDueToDust = false
-            try {
-                const amountToTransfer = daiBefore.subtract(library.constants.daiDustAmount)
-                if (amountToTransfer.value > library.constants.daiDustAmount.value) {
-                    setStepStatuses(x => ({ ...x, transfer: 'in-progress' }))
-                    await library.transferGnosisNative({
-                        originPrivateKey: swapData.sessionKey,
-                        to: Types.asHexString(swapData.targetAddress),
-                        amount: daiBefore.subtract(library.constants.daiDustAmount).toString()
-                    })
-                } else {
-                    skipNeededDueToDust = true
-                }
-                setStepStatuses(x => ({ ...x, transfer: 'done' }))
-            } catch (error) {
-                setStatus('failed')
-                setStepStatuses(x => ({ ...x, transfer: 'error' }))
-                await hooks.onFatalError({ step: 'transfer', error })
-                throw error
-            }
-            if (skipNeededDueToDust) {
-                setStepStatuses(x => ({ ...x, 'transfer-sync': 'skipped' }))
-            } else {
-                try {
-                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'in-progress' }))
-                    await library.waitForGnosisNativeBalanceToDecrease(swapData.temporaryAddress, daiBefore.value)
-                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'done', done: 'done' }))
-                } catch (error) {
-                    setStatus('failed')
-                    setStepStatuses(x => ({ ...x, 'transfer-sync': 'error' }))
-                    await hooks.onFatalError({ step: 'transfer-sync', error })
-                    throw error
-                }
-            }
-        }
-
-        setStatus('done')
-        await hooks.onCompletion()
+        await solver.execute()
     }
 
     return (
@@ -406,10 +275,10 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     <Typography theme={theme} small secondary>
                         Please allow up to 5 minutes for the steps to complete.
                     </Typography>
-                    <ProgressTracker theme={theme} progress={stepStatuses} />
+                    <ProgressTracker theme={theme} progress={stepStates} />
                 </>
             ) : null}
-            {status === 'pending' && nextStep === 'relay' ? (
+            {status === 'pending' ? (
                 <>
                     <LabelSpacing theme={theme}>
                         <Typography theme={theme}>
@@ -513,18 +382,13 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     </div>
                 </>
             ) : null}
-            {status === 'pending' && nextStep === 'relay' ? (
+            {status === 'pending' ? (
                 <QuoteIndicator isLoading={loadingRelayQuote} theme={theme} quote={relayQuote} />
             ) : null}
             <Button
                 theme={theme}
                 onClick={onSwapWithErrorHandling}
-                disabled={
-                    status !== 'pending' ||
-                    (nextStep === 'relay' && !relayQuote) ||
-                    !hasSufficientBalance ||
-                    !walletClient.data
-                }
+                disabled={status !== 'pending' || !relayQuote || !hasSufficientBalance || !walletClient.data}
             >
                 {hasSufficientBalance ? 'Fund' : 'Insufficient balance'}
             </Button>

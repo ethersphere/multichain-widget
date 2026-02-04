@@ -1,5 +1,4 @@
 import { ReactNode } from 'react'
-import { MultichainStepStatus } from '../MultichainStep'
 import { MultichainTheme } from '../MultichainTheme'
 import { Spinner } from '../primitives/Spinner'
 import { Typography } from '../primitives/Typography'
@@ -8,7 +7,7 @@ import { StatusIndicator } from './StatusIndicator'
 interface Props {
     theme: MultichainTheme
     children: ReactNode
-    status: MultichainStepStatus
+    status: 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped'
 }
 
 export function ProgressStatus({ theme, children, status }: Props) {
@@ -16,13 +15,13 @@ export function ProgressStatus({ theme, children, status }: Props) {
     if (status === 'skipped') {
         symbol = <StatusIndicator color="#FFDC00" />
     }
-    if (status === 'done') {
+    if (status === 'completed') {
         symbol = <StatusIndicator color="#2ECC40" />
     }
     if (status === 'in-progress') {
         symbol = <Spinner />
     }
-    if (status === 'error') {
+    if (status === 'failed') {
         symbol = <StatusIndicator color="#FF4136" />
     }
 

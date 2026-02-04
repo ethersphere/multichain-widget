@@ -13,11 +13,11 @@ export function QuoteIndicator({ theme, isLoading, quote }: Props) {
             Loading quote...
         </ProgressStatus>
     ) : quote ? (
-        <ProgressStatus theme={theme} status="done">
+        <ProgressStatus theme={theme} status="completed">
             Quote available
         </ProgressStatus>
     ) : (
-        <ProgressStatus theme={theme} status="error">
+        <ProgressStatus theme={theme} status="failed">
             Quote unavailable - amount is either too small, large, or the token is illiquid
         </ProgressStatus>
     )

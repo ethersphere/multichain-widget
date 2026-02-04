@@ -1,11 +1,10 @@
-import { MultichainProgress } from '../MultichainStep'
 import { MultichainTheme } from '../MultichainTheme'
 import { LabelSpacing } from '../primitives/LabelSpacing'
 import { ProgressStatus } from './ProgressStatus'
 
 interface Props {
     theme: MultichainTheme
-    progress: MultichainProgress
+    progress: Record<string, 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped'>
 }
 
 export function ProgressTracker({ theme, progress }: Props) {
