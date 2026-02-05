@@ -23,3 +23,14 @@ export async function getStampCost(library: MultichainLibrary, depth: number, da
         amount
     }
 }
+
+export function createPostageBatchDepthOptions(reservedSlots: number): {
+    label: string
+    value: string
+}[] {
+    const labels = ['44.35 kB', '6.61 MB', '111.18 MB', '682.21 MB', '2.58 GB', '7.67 GB', '19.78 GB', '46.69 GB']
+    return labels.map((label, index) => ({
+        label,
+        value: (index + 17 + reservedSlots).toString()
+    }))
+}

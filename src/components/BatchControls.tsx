@@ -4,6 +4,7 @@ import { NumberInput } from '../primitives/NumberInput'
 import { Select } from '../primitives/Select'
 import { Span } from '../primitives/Span'
 import { Typography } from '../primitives/Typography'
+import { createPostageBatchDepthOptions } from '../Utility'
 
 interface Props {
     theme: MultichainTheme
@@ -14,6 +15,9 @@ interface Props {
 }
 
 export function BatchControls({ theme, durationDays, setDurationDays, capacityDepth, setCapacityDepth }: Props) {
+    const url = new URL(window.location.href)
+    const reservedSlots = url.searchParams.get('reservedSlots') ? Number(url.searchParams.get('reservedSlots')) : 0
+
     return (
         <div className="multichain__row">
             <NumberInput
@@ -38,13 +42,7 @@ export function BatchControls({ theme, durationDays, setDurationDays, capacityDe
                         theme={theme}
                         value={capacityDepth.toString()}
                         onChange={value => setCapacityDepth(Number(value))}
-                        options={[
-                            { label: '44.35 kB', value: '19' },
-                            { label: '6.61 MB', value: '20' },
-                            { label: '111.18 MB', value: '21' },
-                            { label: '682.21 MB', value: '22' },
-                            { label: '2.58 GB', value: '23' }
-                        ]}
+                        options={createPostageBatchDepthOptions(reservedSlots)}
                         testId="capacity-depth-input"
                     />
                 </LabelSpacing>
