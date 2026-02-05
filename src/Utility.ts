@@ -14,7 +14,7 @@ export interface StampCost {
 }
 
 export async function getStampCost(library: MultichainLibrary, depth: number, days: number): Promise<StampCost> {
-    const pricePerBlock = await Cache.get<bigint>('storage-price', Dates.seconds(30), async () =>
+    const pricePerBlock = await Cache.get<bigint>('storage-price', Dates.minutes(1), async () =>
         library.getStoragePriceGnosis()
     )
     const amount = (BigInt(days * 86_400) / BigInt(5)) * BigInt(pricePerBlock) + 1n

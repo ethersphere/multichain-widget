@@ -169,7 +169,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                         tradeType: 'EXACT_INPUT' as const,
                         amount: selectedTokenAmountNeeded.toString()
                     }
-                    const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.seconds(30), async () => {
+                    const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                         setRelayQuote(null)
                         setLoadingRelayQuote(true)
                         try {
