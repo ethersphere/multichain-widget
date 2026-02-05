@@ -10,9 +10,10 @@ interface Props {
     options: Option[]
     value: string
     onChange: (value: string) => void
+    testId: string
 }
 
-export function Select({ theme, options, value, onChange }: Props) {
+export function Select({ theme, options, value, onChange, testId }: Props) {
     return (
         <select
             value={value}
@@ -31,9 +32,10 @@ export function Select({ theme, options, value, onChange }: Props) {
                 fontSize: theme.fontSize,
                 fontWeight: theme.fontWeight
             }}
+            data-test-id={testId}
         >
             {options.map(option => (
-                <option key={option.value} value={option.value}>
+                <option key={option.value} value={option.value} data-test-id={`${testId}__${option.value}`}>
                     {option.label}
                 </option>
             ))}
