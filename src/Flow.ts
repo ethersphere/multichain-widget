@@ -11,6 +11,8 @@ import { createSushiSyncStep } from './steps/SushiSyncStep'
 import { createTransferStep } from './steps/TransferStep'
 import { createTransferSyncStep } from './steps/TransferSyncStep'
 
+export type SendTransactionSignature = (tx: { to: `0x${string}`; value: bigint }) => Promise<`0x${string}`>
+
 interface FundingFlowOptions {
     library: MultichainLibrary
     sourceChain: number
@@ -20,7 +22,7 @@ interface FundingFlowOptions {
     temporaryAddress: `0x${string}`
     temporaryPrivateKey: `0x${string}`
     targetAddress: `0x${string}`
-    sendTransactionAsync: (tx: { to: `0x${string}`; value: bigint }) => Promise<`0x${string}`>
+    sendTransactionAsync: SendTransactionSignature
     relayClient: RelayClient
     walletClient: WalletClient
     relayQuote: Execute
@@ -48,7 +50,7 @@ interface CreateBatchFlowOptions {
     temporaryAddress: `0x${string}`
     temporaryPrivateKey: `0x${string}`
     targetAddress: `0x${string}`
-    sendTransactionAsync: (tx: { to: `0x${string}`; value: bigint }) => Promise<`0x${string}`>
+    sendTransactionAsync: SendTransactionSignature
     relayClient: RelayClient
     walletClient: WalletClient
     relayQuote: Execute

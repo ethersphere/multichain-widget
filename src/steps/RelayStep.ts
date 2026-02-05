@@ -2,6 +2,7 @@ import { Execute, RelayClient } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { FixedPointNumber } from 'cafe-utility'
 import { WalletClient } from 'viem'
+import { SendTransactionSignature } from '../Flow'
 
 interface Options {
     library: MultichainLibrary
@@ -9,7 +10,7 @@ interface Options {
     sourceToken: string
     temporaryAddress: `0x${string}`
     sourceTokenAmount: FixedPointNumber
-    sendTransactionAsync: (tx: { to: `0x${string}`; value: bigint }) => Promise<`0x${string}`>
+    sendTransactionAsync: SendTransactionSignature
     relayClient: RelayClient
     walletClient: WalletClient
     relayQuote: Execute
