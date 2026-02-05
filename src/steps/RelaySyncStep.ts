@@ -11,7 +11,7 @@ export function createRelaySyncStep(options: Options) {
         name: 'relay-sync',
         precondition: async () => true,
         action: async (_stepName: string, context: Map<string, unknown>) => {
-            const daiBefore = context.get('daiBefore') as FixedPointNumber
+            const daiBefore = FixedPointNumber.cast(context.get('daiBefore'))
             await options.library.waitForGnosisNativeBalanceToIncrease(options.temporaryAddress, daiBefore.value)
         }
     }

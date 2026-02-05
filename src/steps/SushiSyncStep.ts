@@ -12,8 +12,8 @@ export function createSushiSyncStep(options: Options) {
         name: 'sushi-sync',
         precondition: async () => true,
         action: async (_stepName: string, context: Map<string, unknown>) => {
-            const daiBefore = context.get('daiBefore') as FixedPointNumber
-            const bzzBefore = context.get('bzzBefore') as FixedPointNumber
+            const daiBefore = FixedPointNumber.cast(context.get('daiBefore'))
+            const bzzBefore = FixedPointNumber.cast(context.get('bzzBefore'))
             await options.library.waitForGnosisBzzBalanceToIncrease(options.targetAddress, bzzBefore.value)
             await options.library.waitForGnosisNativeBalanceToDecrease(options.temporaryAddress, daiBefore.value)
         }

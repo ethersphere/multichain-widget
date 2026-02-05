@@ -12,7 +12,7 @@ export function createTransferSyncStep(options: Options) {
         precondition: async () => true,
         transientSkipStepName: 'transfer',
         action: async (_stepName: string, context: Map<string, unknown>) => {
-            const daiBefore = context.get('daiBefore') as FixedPointNumber
+            const daiBefore = FixedPointNumber.cast(context.get('daiBefore'))
             await options.library.waitForGnosisNativeBalanceToDecrease(options.temporaryAddress, daiBefore.value)
         }
     }
