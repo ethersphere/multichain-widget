@@ -12,8 +12,7 @@ interface Options {
 export function createSushiStep(options: Options) {
     return {
         name: 'sushi',
-        precondition: async () => true,
-        action: async (_stepName: string, context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>) => {
             const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
             const bzzBefore = await options.library.getGnosisBzzBalance(options.targetAddress)
             context.set('daiBefore', daiBefore)

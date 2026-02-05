@@ -10,8 +10,7 @@ interface Options {
 export function createApproveBzzStep(options: Options) {
     return {
         name: 'approve-bzz',
-        precondition: async () => true,
-        action: async (_stepName: string, context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>) => {
             const nonce = await options.library.getGnosisTransactionCount(options.temporaryAddress)
             context.set('nonce', nonce)
             await options.library.approveGnosisBzz({

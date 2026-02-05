@@ -15,7 +15,7 @@ export function createTransferStep(options: Options) {
             const amountToTransfer = dai.subtract(options.library.constants.daiDustAmount)
             return amountToTransfer.value > options.library.constants.daiDustAmount.value
         },
-        action: async (_stepName: string, context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>) => {
             const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
             context.set('daiBefore', daiBefore)
             await options.library.transferGnosisNative({

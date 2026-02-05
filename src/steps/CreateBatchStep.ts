@@ -12,8 +12,7 @@ interface Options {
 export function createCreateBatchStep(options: Options) {
     return {
         name: 'create-batch',
-        precondition: async () => true,
-        action: async (_stepName: string, context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>) => {
             const nonce = Types.asNumber(context.get('nonce'))
             const batchId = await options.library.createBatchGnosis({
                 amount: options.batchAmount,

@@ -18,8 +18,7 @@ interface Options {
 export function createRelayStep(options: Options) {
     return {
         name: 'relay',
-        precondition: async () => true,
-        action: async (_stepName: string, context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>) => {
             const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
             context.set('daiBefore', daiBefore)
             if (

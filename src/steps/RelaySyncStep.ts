@@ -9,8 +9,7 @@ interface Options {
 export function createRelaySyncStep(options: Options) {
     return {
         name: 'relay-sync',
-        precondition: async () => true,
-        action: async (_stepName: string, context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>) => {
             const daiBefore = FixedPointNumber.cast(context.get('daiBefore'))
             await options.library.waitForGnosisNativeBalanceToIncrease(options.temporaryAddress, daiBefore.value)
         }
