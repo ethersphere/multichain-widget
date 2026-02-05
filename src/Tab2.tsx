@@ -138,12 +138,16 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             }, Dates.minutes(1)),
             System.runAndSetInterval(async () => {
                 try {
-                    const balance = await getBalance(config, {
-                        address: swapData.sourceAddress as `0x${string}`,
-                        token:
-                            sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`),
-                        chainId: sourceChain
-                    })
+                    const token =
+                        sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`)
+                    const cacheKey = `${swapData.sourceAddress}-${sourceChain}-${token}`
+                    const balance = await Cache.get(cacheKey, Dates.minutes(1), async () =>
+                        getBalance(config, {
+                            address: swapData.sourceAddress as `0x${string}`,
+                            token,
+                            chainId: sourceChain
+                        })
+                    )
                     setSelectedTokenBalance(balance)
                 } catch (error) {
                     console.error('Error fetching selected token balance:', error)
