@@ -7,7 +7,7 @@ interface Props {
     progress: Record<string, 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped'>
 }
 
-export function ProgressTracker({ theme, progress }: Props) {
+export function FundingProgressTracker({ theme, progress }: Props) {
     return (
         <LabelSpacing theme={theme}>
             <ProgressStatus theme={theme} status={progress.relay} testId="status-step-1">

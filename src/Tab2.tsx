@@ -5,11 +5,11 @@ import { Arrays, Cache, Dates, FixedPointNumber, Numbers, Objects, System, Types
 import { useEffect, useState } from 'react'
 import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
 import { getBalance } from 'wagmi/actions'
-import { ProgressTracker } from './components/ProgressTracker'
+import { FundingProgressTracker } from './components/FundingProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
 import { config } from './Config'
-import { createFlow } from './Flow'
+import { createFundingFlow } from './Flow'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainTheme } from './MultichainTheme'
 import { AdvancedSelect } from './primitives/AdvancedSelect'
@@ -226,7 +226,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             return
         }
 
-        const solver = createFlow({
+        const solver = createFundingFlow({
             library,
             relayQuote,
             sourceChain,
@@ -300,7 +300,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     <Typography theme={theme} testId="duration-info" small secondary>
                         Please allow up to 5 minutes for the steps to complete.
                     </Typography>
-                    <ProgressTracker theme={theme} progress={stepStates} />
+                    <FundingProgressTracker theme={theme} progress={stepStates} />
                 </>
             ) : null}
             {status === 'pending' ? (
