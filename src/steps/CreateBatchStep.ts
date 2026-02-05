@@ -24,6 +24,7 @@ export function createCreateBatchStep(options: Options) {
                 owner: Types.asHexString(options.targetAddress),
                 nonce: nonce + 1
             })
+            postMessage({ event: 'batch', batchId }, '*')
             context.set('batchId', batchId)
         }
     }
