@@ -1,4 +1,5 @@
 import { getDefaultConfig } from '@rainbow-me/rainbowkit'
+import { convertViemChainToRelayChain } from '@relayprotocol/relay-sdk'
 import { arbitrum, base, gnosis, mainnet, optimism, polygon } from 'viem/chains'
 import { Config } from 'wagmi'
 
@@ -8,3 +9,7 @@ export const config: Config = getDefaultConfig({
     chains: [mainnet, polygon, optimism, arbitrum, base, gnosis],
     ssr: false
 })
+
+export const configuredRelayChains = [mainnet, polygon, optimism, arbitrum, base, gnosis].map(
+    convertViemChainToRelayChain
+)

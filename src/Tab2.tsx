@@ -1,5 +1,5 @@
 import { useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
-import { Execute, getClient } from '@relayprotocol/relay-sdk'
+import { createClient, Execute } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Arrays, Cache, Dates, FixedPointNumber, Numbers, Objects, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
@@ -8,7 +8,7 @@ import { getBalance } from 'wagmi/actions'
 import { FundingProgressTracker } from './components/FundingProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
-import { config } from './Config'
+import { config, configuredRelayChains } from './Config'
 import { createFundingFlow } from './Flow'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainTheme } from './MultichainTheme'
@@ -58,7 +58,7 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
     >({})
 
     // relay and wagmi hooks
-    const relayClient = getClient()
+    const relayClient = createClient({ chains: configuredRelayChains })
     const walletClient = useWalletClient()
     const { chains: relayChains } = useRelayChains()
     const configuredChains = useChains()
