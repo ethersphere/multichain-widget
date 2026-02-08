@@ -1,13 +1,16 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
+import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Binary, Elliptic, Types } from 'cafe-utility'
 import { Dispatch, SetStateAction } from 'react'
 import { useAccount, useChainId } from 'wagmi'
+import { BatchControls } from './components/BatchControls'
+import { FundingControls } from './components/FundingControls'
 import { IntentInfo } from './components/IntentInfo'
 import { Intent } from './Intent'
+import { MultichainMode } from './MultichainMode'
 import { MultichainTheme } from './MultichainTheme'
 import { Button } from './primitives/Button'
 import { LabelSpacing } from './primitives/LabelSpacing'
-import { NumberInput } from './primitives/NumberInput'
 import { Span } from './primitives/Span'
 import { TextInput } from './primitives/TextInput'
 import { Typography } from './primitives/Typography'
@@ -18,6 +21,8 @@ const MINIMUM_XBZZ = 0.5
 
 interface Props {
     theme: MultichainTheme
+    mode: MultichainMode
+    library: MultichainLibrary
     intent: Intent
     setTab: (tab: 1 | 2) => void
     swapData: SwapData
@@ -25,7 +30,7 @@ interface Props {
     setInitialChainId: Dispatch<SetStateAction<number | null>>
 }
 
-export function Tab1({ theme, intent, setTab, swapData, setSwapData, setInitialChainId }: Props) {
+export function Tab1({ theme, mode, library, intent, setTab, swapData, setSwapData, setInitialChainId }: Props) {
     const { address } = useAccount()
     const chainId = useChainId()
 
@@ -101,28 +106,11 @@ export function Tab1({ theme, intent, setTab, swapData, setSwapData, setInitialC
                     testId="target-address-input"
                 />
             </LabelSpacing>
-            <div className="multichain__row">
-                <NumberInput
-                    label="xDAI"
-                    theme={theme}
-                    placeholder="0.5"
-                    max={10}
-                    min={0}
-                    value={swapData.nativeAmount}
-                    onChange={e => setSwapData(x => ({ ...x, nativeAmount: e }))}
-                    testId="xdai-input"
-                />
-                <NumberInput
-                    label="xBZZ"
-                    theme={theme}
-                    placeholder="10"
-                    max={200}
-                    min={0}
-                    value={swapData.bzzAmount}
-                    onChange={e => setSwapData(x => ({ ...x, bzzAmount: Number(e) }))}
-                    testId="xbzz-input"
-                />
-            </div>
+            {mode === 'funding' ? (
+                <FundingControls theme={theme} swapData={swapData} setSwapData={setSwapData} />
+            ) : mode === 'batch' ? (
+                <BatchControls theme={theme} library={library} swapData={swapData} setSwapData={setSwapData} />
+            ) : null}
             <ConnectButton chainStatus="none" showBalance={false} />
             <Button
                 theme={theme}

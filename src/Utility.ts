@@ -13,11 +13,8 @@ export interface StampCost {
     amount: bigint
 }
 
-export async function getStampCost(library: MultichainLibrary, depth: number, days: number): Promise<StampCost> {
-    const pricePerBlock = await Cache.get<bigint>('storage-price', Dates.minutes(1), async () =>
-        library.getStoragePriceGnosis()
-    )
-    const amount = (BigInt(days * 86_400) / BigInt(5)) * BigInt(pricePerBlock) + 1n
+export function getStampCost(depth: number, days: number, storagePrice: bigint): StampCost {
+    const amount = (BigInt(days * 86_400) / BigInt(5)) * storagePrice + 1n
     return {
         bzz: new FixedPointNumber(2n ** BigInt(depth) * BigInt(amount), 16),
         amount
@@ -33,4 +30,16 @@ export function createPostageBatchDepthOptions(reservedSlots: number): {
         label,
         value: (index + 17 + reservedSlots).toString()
     }))
+}
+
+export function getAmountForDays(days: number, pricePerBlock: bigint): bigint {
+    const blockTime = 5n
+    return (BigInt(days * 86_400) / blockTime) * pricePerBlock + 1n
+}
+
+export async function getStoragePrice(library: MultichainLibrary): Promise<bigint> {
+    const pricePerBlock = await Cache.get<bigint>('storage-price', Dates.minutes(1), async () =>
+        library.getStoragePriceGnosis()
+    )
+    return pricePerBlock
 }

@@ -1,16 +1,18 @@
 import { useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
 import { createClient, Execute } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
-import { Arrays, Cache, Dates, FixedPointNumber, Numbers, Objects, System, Types } from 'cafe-utility'
+import { Arrays, Cache, Dates, FixedPointNumber, Numbers, Objects, Solver, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
 import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
 import { getBalance } from 'wagmi/actions'
+import { CreateBatchProgressTracker } from './components/CreateBatchProgressTracker'
 import { FundingProgressTracker } from './components/FundingProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
 import { config, configuredRelayChains } from './Config'
-import { createFundingFlow } from './Flow'
+import { createCreateBatchFlow, createFundingFlow } from './Flow'
 import { MultichainHooks } from './MultichainHooks'
+import { MultichainMode } from './MultichainMode'
 import { MultichainTheme } from './MultichainTheme'
 import { AdvancedSelect } from './primitives/AdvancedSelect'
 import { Button } from './primitives/Button'
@@ -23,6 +25,7 @@ import { shortenHash } from './Utility'
 
 interface Props {
     theme: MultichainTheme
+    mode: MultichainMode
     hooks: MultichainHooks
     setTab: (tab: 1 | 2) => void
     swapData: SwapData
@@ -36,7 +39,7 @@ interface Balance {
     value: bigint
 }
 
-export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }: Props) {
+export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, library }: Props) {
     // states for user input
     const [sourceChain, setSourceChain] = useState<number>(initialChainId)
     const [sourceToken, setSourceToken] = useState<string>(library.constants.nullAddress)
@@ -230,20 +233,50 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
             return
         }
 
-        const solver = createFundingFlow({
-            library,
-            relayQuote,
-            sourceChain,
-            sourceToken,
-            sourceTokenAmount: selectedTokenAmountNeeded,
-            sendTransactionAsync,
-            targetAddress: Types.asHexString(swapData.targetAddress),
-            temporaryAddress: Types.asHexString(swapData.temporaryAddress),
-            temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
-            bzzUsdValue: neededBzzUsdValue,
-            relayClient,
-            walletClient: walletClient.data
-        })
+        let solver: Solver
+
+        if (mode === 'funding') {
+            solver = createFundingFlow({
+                library,
+                relayQuote,
+                sourceChain,
+                sourceToken,
+                sourceTokenAmount: selectedTokenAmountNeeded,
+                sendTransactionAsync,
+                targetAddress: Types.asHexString(swapData.targetAddress),
+                temporaryAddress: Types.asHexString(swapData.temporaryAddress),
+                temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
+                bzzUsdValue: neededBzzUsdValue,
+                relayClient,
+                walletClient: walletClient.data
+            })
+        } else if (mode === 'batch') {
+            if (!swapData.batch) {
+                console.error('Batch parameters not set')
+                alert('Batch parameters not set')
+                return
+            }
+            solver = createCreateBatchFlow({
+                library,
+                relayQuote,
+                sourceChain,
+                sourceToken,
+                sourceTokenAmount: selectedTokenAmountNeeded,
+                sendTransactionAsync,
+                targetAddress: Types.asHexString(swapData.targetAddress),
+                temporaryAddress: Types.asHexString(swapData.temporaryAddress),
+                temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
+                bzzUsdValue: neededBzzUsdValue,
+                relayClient,
+                walletClient: walletClient.data,
+                batchAmount: swapData.batch.amount,
+                batchDepth: swapData.batch.depth
+            })
+        } else {
+            console.error('Invalid mode, no solver available')
+            alert('Invalid mode, no solver available')
+            return
+        }
 
         solver.setHooks({
             onStatusChange: async newStatus => {
@@ -306,7 +339,11 @@ export function Tab2({ theme, hooks, setTab, swapData, initialChainId, library }
                     <Typography theme={theme} testId="duration-info" small secondary>
                         Please allow up to 5 minutes for the steps to complete.
                     </Typography>
-                    <FundingProgressTracker theme={theme} progress={stepStates} />
+                    {mode === 'funding' ? (
+                        <FundingProgressTracker theme={theme} progress={stepStates} />
+                    ) : mode === 'batch' ? (
+                        <CreateBatchProgressTracker theme={theme} progress={stepStates} />
+                    ) : null}
                 </>
             ) : null}
             {status === 'pending' ? (

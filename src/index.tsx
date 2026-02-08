@@ -9,6 +9,7 @@ import { WagmiProvider } from 'wagmi'
 import { config } from './Config'
 import { Intent } from './Intent'
 import { getDefaultHooks, MultichainHooks } from './MultichainHooks'
+import { MultichainMode } from './MultichainMode'
 import { getDefaultMultichainTheme, MultichainTheme } from './MultichainTheme'
 import './MultichainWidget.css'
 import { Router } from './Router'
@@ -40,6 +41,8 @@ export function MultichainWidget({ theme, hooks, settings, intent, destination, 
     const queryParamIntent = url.searchParams.get('intent')
     const queryParamDai = url.searchParams.get('dai')
     const queryParamBzz = url.searchParams.get('bzz')
+    const queryParamMode = url.searchParams.get('mode')
+
     const resolvedDestination = destination ? destination : queryParamDestination ? queryParamDestination : ''
     const resolvedIntent: Intent = intent
         ? intent
@@ -50,6 +53,7 @@ export function MultichainWidget({ theme, hooks, settings, intent, destination, 
         : 'arbitrary'
     const resolvedDai = dai ? dai : queryParamDai ? Number(queryParamDai) : 0.5
     const resolvedBzz = bzz ? bzz : queryParamBzz ? Number(queryParamBzz) : 10
+    const resolvedMode: MultichainMode = queryParamMode === 'batch' ? 'batch' : 'funding'
 
     return (
         <WagmiProvider config={config}>
@@ -57,6 +61,7 @@ export function MultichainWidget({ theme, hooks, settings, intent, destination, 
                 <RainbowKitProvider theme={darkTheme()}>
                     <Router
                         theme={mergedTheme}
+                        mode={resolvedMode}
                         hooks={mergedHooks}
                         library={library}
                         intent={resolvedIntent}

@@ -5,4 +5,8 @@ export interface SwapData {
     nativeAmount: number
     sourceAddress: `0x${string}` | string
     targetAddress: `0x${string}` | string
+    batch?: {
+        amount: bigint
+        depth: number
+    }
 }
