@@ -1,5 +1,6 @@
-import { ReactNode } from 'react'
+import { ReactNode, useState } from 'react'
 import { MultichainTheme } from '../MultichainTheme'
+import { Typography } from './Typography'
 
 interface Props {
     theme: MultichainTheme
@@ -8,10 +9,13 @@ interface Props {
     children: ReactNode
     secondary?: boolean
     tooltip?: string
+    icon?: ReactNode
     testId: string
 }
 
-export function Button({ theme, onClick, disabled, children, secondary, tooltip, testId }: Props) {
+export function Button({ theme, onClick, disabled, children, secondary, tooltip, testId, icon }: Props) {
+    const [hovering, setHovering] = useState(false)
+
     return (
         <button
             className="multichain__button"
@@ -29,12 +33,30 @@ export function Button({ theme, onClick, disabled, children, secondary, tooltip,
                 cursor: disabled ? 'not-allowed' : 'pointer',
                 fontFamily: theme.fontFamily,
                 fontSize: theme.fontSize,
-                fontWeight: theme.fontWeight
+                fontWeight: theme.fontWeight,
+                position: 'relative'
             }}
-            title={tooltip}
             data-test-id={testId}
+            onMouseEnter={() => setHovering(true)}
+            onMouseLeave={() => setHovering(false)}
+            onFocus={() => setHovering(true)}
+            onBlur={() => setHovering(false)}
         >
             {children}
+            {tooltip && (
+                <span
+                    className="multichain__tooltip"
+                    style={{
+                        borderRadius: theme.borderRadius,
+                        opacity: hovering ? 1 : 0
+                    }}
+                >
+                    <Typography theme={theme} testId={`${testId}_tooltip`} small>
+                        {tooltip}
+                    </Typography>
+                </span>
+            )}
+            {icon && <span className="multichain__button-icon">{icon}</span>}
         </button>
     )
 }

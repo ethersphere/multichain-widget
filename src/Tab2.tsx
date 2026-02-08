@@ -11,6 +11,7 @@ import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
 import { config, configuredRelayChains } from './Config'
 import { createCreateBatchFlow, createFundingFlow } from './Flow'
+import { AlertIcon } from './icons/AlertIcon'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainMode } from './MultichainMode'
 import { MultichainTheme } from './MultichainTheme'
@@ -462,6 +463,12 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 onClick={onSwapWithErrorHandling}
                 disabled={status !== 'pending' || !relayQuote || !hasSufficientBalance || !walletClient.data}
                 testId="fund"
+                tooltip={
+                    !selectedTokenBalance && relayQuote
+                        ? "Couldn't fetch and verify balance for the selected token. Only proceed if you are sure you have sufficient balance and know what you are doing. Make sure to check the transaction details in your wallet before confirming."
+                        : undefined
+                }
+                icon={!selectedTokenBalance && relayQuote ? <AlertIcon /> : undefined}
             >
                 {hasSufficientBalance ? 'Fund' : 'Insufficient balance'}
             </Button>

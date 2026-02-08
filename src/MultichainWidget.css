@@ -123,3 +123,35 @@
     align-items: center;
     cursor: pointer;
 }
+
+.multichain__tooltip {
+    position: absolute;
+    left: 50%;
+    top: 125%;
+    width: 70%;
+    transform: translateX(-50%);
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+    z-index: 1000;
+    background-color: #323232;
+    padding: 16px 12px;
+    text-align: center;
+}
+
+.multichain__tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px;
+    border-style: solid;
+    border-color: transparent transparent #323232 transparent;
+}
+
+.multichain__button-icon {
+    display: inline-block;
+    position: absolute;
+    margin-top: -2px;
+    margin-left: 4px;
+}
