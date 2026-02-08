@@ -14,7 +14,7 @@ export function createCreateBatchStep(options: Options) {
         name: 'create-batch',
         action: async (context: Map<string, unknown>) => {
             const nonce = Types.asNumber(context.get('nonce'))
-            const batchId = await options.library.createBatchGnosis({
+            const result = await options.library.createBatchGnosis({
                 amount: options.batchAmount,
                 depth: options.batchDepth,
                 originPrivateKey: options.temporaryPrivateKey,
@@ -24,8 +24,17 @@ export function createCreateBatchStep(options: Options) {
                 owner: Types.asHexString(options.targetAddress),
                 nonce: nonce + 1
             })
-            postMessage({ event: 'batch', batchId }, '*')
-            context.set('batchId', batchId)
+            const transaction = await options.library.getGnosisTransaction(result.transactionHash)
+            const message = {
+                event: 'batch',
+                batchId: result.batchId,
+                depth: options.batchDepth,
+                amount: options.batchAmount.toString(),
+                blockNumber: transaction.blockNumber
+            }
+            console.log('Postage batch created', message)
+            postMessage(message, '*')
+            context.set('batchId', result.batchId)
         }
     }
 }

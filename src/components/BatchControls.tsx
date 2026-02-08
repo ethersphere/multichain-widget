@@ -18,9 +18,9 @@ interface Props {
 
 export function BatchControls({ theme, library, setSwapData }: Props) {
     const url = new URL(window.location.href)
-    const reservedSlots = url.searchParams.get('reservedSlots') ? Number(url.searchParams.get('reservedSlots')) : 0
+    const reservedSlots = url.searchParams.get('reserved-slots') ? Number(url.searchParams.get('reserved-slots')) : 0
 
-    const [capacityDepth, setCapacityDepth] = useState(19)
+    const [capacityDepth, setCapacityDepth] = useState(19 + reservedSlots)
     const [durationDays, setDurationDays] = useState(7)
 
     useEffect(() => {
@@ -29,7 +29,7 @@ export function BatchControls({ theme, library, setSwapData }: Props) {
                 ...x,
                 nativeAmount: 0.05,
                 bzzAmount:
-                    parseFloat(getStampCost(capacityDepth, durationDays, storagePrice).bzz.toDecimalString()) * 1.1, // 10% buffer
+                    parseFloat(getStampCost(capacityDepth, durationDays, storagePrice).bzz.toDecimalString()) * 1.2, // 20% buffer
                 batch: { amount: getAmountForDays(durationDays, storagePrice), depth: capacityDepth }
             }))
         })

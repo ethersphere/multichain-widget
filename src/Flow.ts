@@ -63,8 +63,8 @@ export function createCreateBatchFlow(options: CreateBatchFlowOptions) {
 
     solver.addStep(createRelayStep(options))
     solver.addStep(createRelaySyncStep(options))
-    solver.addStep(createSushiStep(options))
-    solver.addStep(createSushiSyncStep(options))
+    solver.addStep(createSushiStep({ ...options, targetAddress: options.temporaryAddress }))
+    solver.addStep(createSushiSyncStep({ ...options, targetAddress: options.temporaryAddress }))
     solver.addStep(createApproveBzzStep(options))
     solver.addStep(createCreateBatchStep(options))
     solver.addStep(createTransferStep(options))

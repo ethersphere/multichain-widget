@@ -165,12 +165,6 @@ Most styles can be overwritten by passing a `theme` prop to the `MultichainWidge
 
 A backup of every generated private key is stored in `localStorage` with a timestamp suffix to avoid collisions.
 
-## Recoverability
-
-~~It is OK if the flow errors out or the user navigates away. The app can detect which steps have been completed and resume from there.~~
-
-This one is still under investigation. By having absolute amounts for xDAI and xBZZ initially, this used to work, but for the ideal UX we switched to relative amounts. This makes it much harder to guess whether there was a flow interruption or not.
-
 ## Reactivity
 
 Hooks can be set by passing `hooks` prop to the `MultichainWidget` component. Currently supported hooks are:
@@ -178,9 +172,35 @@ Hooks can be set by passing `hooks` prop to the `MultichainWidget` component. Cu
 -   `beforeTransactionStart`
 -   `onFatalError`
 -   `onCompletion`
+-   `onUserAbort`
 
-# Known issues / Remaining tasks
+# Postage batch creation
 
-## React version dependency
+1. Pass the `mode=batch` query param to the widget to switch to batch creation mode.
+2. Pass `destination=0x${string}` to specify the desired owner of the postage batch. This is NOT related to the payer address.
+3. Recommended to pass `intent=postage-batch` to adjust the information text on the first screen.
+4. Optionally pass the `reserved-slots=2` query param to specify the number of intended reserved slots per bucket within the batch. This adjusts the capacity displayed on the first page and shifts the underlying depth values.
 
-It seems that the app only works with React 18+. This may not be compatible with Bee Dashboard using React 17 (due to Material UI 4 dependency). It would be best to upgrade Bee Dashboard to React 18 and Material UI 5. React 18 is already 4 years old.
+Example:
+
+```
+https://fund.ethswarm.org/?mode=batch&destination=0x45a1502382541Cd610CC9068e88727426b696293&intent=postage-batch&reserved-slots=2
+```
+
+## iframe messages
+
+-   `{ event: 'error', error }`
+-   `{ event: 'finish' }`
+-   `{ event: 'batch', batchId: 0x${string}, depth: number, amount: numberString, blockNumber: 0x${string} }`
+
+Example:
+
+```json
+{
+    "event": "batch",
+    "batchId": "0xfe48d3cd7ec9cdf455811894d63683b1fac8b358501b843892b372e355155b62",
+    "depth": 21,
+    "amount": "10453363201",
+    "blockNumber": "0x2a828b8"
+}
+```
