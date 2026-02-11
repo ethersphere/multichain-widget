@@ -13,6 +13,7 @@ import { MultichainMode } from './MultichainMode'
 import { getDefaultMultichainTheme, MultichainTheme } from './MultichainTheme'
 import './MultichainWidget.css'
 import { Router } from './Router'
+import { getQueryParam } from './Utility'
 
 const queryClient = new QueryClient()
 
@@ -36,12 +37,11 @@ export function MultichainWidget({ theme, hooks, settings, intent, destination, 
     const mergedHooks = Objects.deepMerge2(getDefaultHooks(), hooks || {})
     const library = new MultichainLibrary(settings)
 
-    const url = new URL(window.location.href)
-    const queryParamDestination = url.searchParams.get('destination')
-    const queryParamIntent = url.searchParams.get('intent')
-    const queryParamDai = url.searchParams.get('dai')
-    const queryParamBzz = url.searchParams.get('bzz')
-    const queryParamMode = url.searchParams.get('mode')
+    const queryParamDestination = getQueryParam('destination')
+    const queryParamIntent = getQueryParam('intent').toLowerCase()
+    const queryParamDai = getQueryParam('dai')
+    const queryParamBzz = getQueryParam('bzz')
+    const queryParamMode = getQueryParam('mode').toLowerCase()
 
     const resolvedDestination = destination ? destination : queryParamDestination ? queryParamDestination : ''
     const resolvedIntent: Intent = intent

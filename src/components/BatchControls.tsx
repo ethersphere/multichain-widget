@@ -7,7 +7,14 @@ import { Select } from '../primitives/Select'
 import { Span } from '../primitives/Span'
 import { Typography } from '../primitives/Typography'
 import { SwapData } from '../SwapData'
-import { createPostageBatchDepthOptions, getAmountForDays, getStampCost, getStoragePrice } from '../Utility'
+import {
+    createPostageBatchDepthOptions,
+    getAmountForDays,
+    getQueryParam,
+    getStampCost,
+    getStoragePrice,
+    hasQueryParam
+} from '../Utility'
 
 interface Props {
     theme: MultichainTheme
@@ -17,8 +24,7 @@ interface Props {
 }
 
 export function BatchControls({ theme, library, setSwapData }: Props) {
-    const url = new URL(window.location.href)
-    const reservedSlots = url.searchParams.get('reserved-slots') ? Number(url.searchParams.get('reserved-slots')) : 0
+    const reservedSlots = hasQueryParam('reserved-slots') ? Number(getQueryParam('reserved-slots')) : 0
 
     const [capacityDepth, setCapacityDepth] = useState(19 + reservedSlots)
     const [durationDays, setDurationDays] = useState(7)

@@ -43,3 +43,16 @@ export async function getStoragePrice(library: MultichainLibrary): Promise<bigin
     )
     return pricePerBlock
 }
+
+const queryParams: Record<string, string> = {}
+new URL(window.location.href).searchParams.forEach((value: string, key: string) => {
+    queryParams[key.toLowerCase()] = value
+})
+
+export function hasQueryParam(param: string): boolean {
+    return param.toLowerCase() in queryParams
+}
+
+export function getQueryParam(param: string): string | '' {
+    return queryParams[param.toLowerCase()] || ''
+}

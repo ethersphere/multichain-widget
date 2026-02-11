@@ -33,7 +33,7 @@ export function Router({ theme, mode, hooks, library, intent, destination, dai, 
         bzzAmount: bzz,
         nativeAmount: dai,
         sourceAddress: '',
-        targetAddress: destination ? Types.asHexString(destination) : '',
+        targetAddress: Types.isHexString(destination) ? Types.asHexString(destination, { uneven: true }) : '',
         sessionKey,
         temporaryAddress: Types.asHexString(
             Binary.uint8ArrayToHex(
