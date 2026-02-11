@@ -236,10 +236,12 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
 
         let solver: Solver
 
-        window.addEventListener('beforeunload', event => {
+        const beforeUnload = (event: BeforeUnloadEvent) => {
             event.preventDefault()
             event.returnValue = ''
-        })
+        }
+
+        window.addEventListener('beforeunload', beforeUnload)
 
         if (mode === 'funding') {
             solver = createFundingFlow({
@@ -303,7 +305,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
         })
 
         await solver.execute().finally(() => {
-            window.removeEventListener('beforeunload', () => {})
+            window.removeEventListener('beforeunload', beforeUnload)
         })
     }
 
