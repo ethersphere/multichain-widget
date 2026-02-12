@@ -12,6 +12,7 @@ import { TokenDisplay } from './components/TokenDisplay'
 import { config, configuredRelayChains } from './Config'
 import { createCreateBatchFlow, createFundingFlow } from './Flow'
 import { AlertIcon } from './icons/AlertIcon'
+import { createLock } from './Lock'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainMode } from './MultichainMode'
 import { MultichainTheme } from './MultichainTheme'
@@ -304,9 +305,24 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             }
         })
 
-        await solver.execute().finally(() => {
-            window.removeEventListener('beforeunload', beforeUnload)
-        })
+        const lock = createLock()
+
+        const couldLock = await lock.couldLock()
+
+        if (couldLock === true) {
+            await solver.execute().finally(async () => {
+                window.removeEventListener('beforeunload', beforeUnload)
+                await lock.unlock()
+            })
+        } else {
+            const secondsLeft = (couldLock.getTime() - Date.now()) / 1000
+            const error = new Error(
+                `Another swap is currently in progress. Please wait ${Math.ceil(secondsLeft)} seconds and try again.`
+            )
+            console.error('Swap flow error:', error)
+            await hooks.onFatalError(error)
+            postMessage({ event: 'error', error }, '*')
+        }
     }
 
     return (
