@@ -23,7 +23,7 @@ import { Span } from './primitives/Span'
 import { TextInput } from './primitives/TextInput'
 import { Typography } from './primitives/Typography'
 import { SwapData } from './SwapData'
-import { shortenHash } from './Utility'
+import { getQueryParam, shortenHash } from './Utility'
 
 interface Props {
     theme: MultichainTheme
@@ -244,6 +244,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
 
         window.addEventListener('beforeunload', beforeUnload)
 
+        const mocked = getQueryParam('mocked') === 'true'
+
         if (mode === 'funding') {
             solver = createFundingFlow({
                 library,
@@ -257,7 +259,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
                 bzzUsdValue: neededBzzUsdValue,
                 relayClient,
-                walletClient: walletClient.data
+                walletClient: walletClient.data,
+                mocked
             })
         } else if (mode === 'batch') {
             if (!swapData.batch) {
@@ -279,7 +282,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 relayClient,
                 walletClient: walletClient.data,
                 batchAmount: swapData.batch.amount,
-                batchDepth: swapData.batch.depth
+                batchDepth: swapData.batch.depth,
+                mocked
             })
         } else {
             console.error('Invalid mode, no solver available')
