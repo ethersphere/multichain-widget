@@ -14,11 +14,16 @@ interface Options {
     relayClient: RelayClient
     walletClient: WalletClient
     relayQuote: Execute
+    totalDaiValue: FixedPointNumber
 }
 
 export function createRelayStep(options: Options) {
     return {
         name: 'relay',
+        precondition: async () => {
+            const dai = await options.library.getGnosisNativeBalance(options.temporaryAddress)
+            return dai.value < options.totalDaiValue.value
+        },
         action: async (context: Map<string, unknown>) => {
             const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
             context.set('daiBefore', daiBefore)

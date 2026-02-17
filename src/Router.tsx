@@ -1,6 +1,6 @@
 import { MultichainLibrary } from '@upcoming/multichain-library'
-import { Binary, Elliptic, Strings, Types } from 'cafe-utility'
-import { useState } from 'react'
+import { Binary, Dates, Elliptic, Strings, System, Types } from 'cafe-utility'
+import { useEffect, useState } from 'react'
 import { Intent } from './Intent'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainMode } from './MultichainMode'
@@ -29,6 +29,7 @@ export function Router({ theme, mode, hooks, library, intent, destination, dai, 
         localStorage.setItem(`${LOCAL_STORAGE_KEY}_${Date.now()}`, sessionKey)
     }
 
+    const [bzzUsdPrice, setBzzUsdPrice] = useState<number | null>(null)
     const [swapData, setSwapData] = useState<SwapData>({
         bzzAmount: bzz,
         nativeAmount: dai,
@@ -46,6 +47,13 @@ export function Router({ theme, mode, hooks, library, intent, destination, dai, 
     const [tab, setTab] = useState<1 | 2>(1)
     const [initialChainId, setInitialChainId] = useState<number | null>(null)
 
+    useEffect(() => {
+        return System.runAndSetInterval(async () => {
+            const price = await library.getGnosisBzzTokenPrice()
+            setBzzUsdPrice(price)
+        }, Dates.minutes(10))
+    })
+
     if (tab === 1 || initialChainId === null) {
         return (
             <Tab1
@@ -57,11 +65,12 @@ export function Router({ theme, mode, hooks, library, intent, destination, dai, 
                 swapData={swapData}
                 setSwapData={setSwapData}
                 setInitialChainId={setInitialChainId}
+                bzzUsdPrice={bzzUsdPrice}
             />
         )
     }
 
-    return (
+    return bzzUsdPrice ? (
         <Tab2
             mode={mode}
             setTab={setTab}
@@ -70,6 +79,7 @@ export function Router({ theme, mode, hooks, library, intent, destination, dai, 
             swapData={swapData}
             initialChainId={initialChainId}
             library={library}
+            bzzUsdPrice={bzzUsdPrice}
         />
-    )
+    ) : null
 }

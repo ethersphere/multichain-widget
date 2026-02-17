@@ -34,8 +34,7 @@ export function BatchControls({ theme, library, setSwapData }: Props) {
             setSwapData(x => ({
                 ...x,
                 nativeAmount: 0.05,
-                bzzAmount:
-                    parseFloat(getStampCost(capacityDepth, durationDays, storagePrice).bzz.toDecimalString()) * 1.2, // 20% buffer
+                bzzAmount: getStampCost(capacityDepth, durationDays, storagePrice).bzz.toFloat() * 1.2, // 20% buffer
                 batch: { amount: getAmountForDays(durationDays, storagePrice), depth: capacityDepth }
             }))
         })

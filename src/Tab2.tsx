@@ -33,6 +33,7 @@ interface Props {
     swapData: SwapData
     initialChainId: number
     library: MultichainLibrary
+    bzzUsdPrice: number
 }
 
 interface Balance {
@@ -41,16 +42,14 @@ interface Balance {
     value: bigint
 }
 
-export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, library }: Props) {
+export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, library, bzzUsdPrice }: Props) {
     // states for user input
     const [sourceChain, setSourceChain] = useState<number>(initialChainId)
     const [sourceToken, setSourceToken] = useState<string>(library.constants.nullAddress)
 
     // states for network data
-    const [bzzUsdPrice, setBzzUsdPrice] = useState<number | null>(null)
     const [selectedTokenBalance, setSelectedTokenBalance] = useState<Balance | null>(null)
     const [selectedTokenUsdPrice, setSelectedTokenUsdPrice] = useState<number | null>(null)
-    const [selectedTokenAmountNeeded, setSelectedTokenAmountNeeded] = useState<FixedPointNumber | null>(null)
 
     // quote state
     const [loadingRelayQuote, setLoadingRelayQuote] = useState<boolean>(true)
@@ -73,65 +72,32 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     const { switchChainAsync } = useSwitchChain()
 
     // computed
+    const currencyIn = relayQuote?.details?.currencyIn
+    const selectedTokenAmountNeeded =
+        currencyIn?.amount && currencyIn.currency?.decimals
+            ? new FixedPointNumber(currencyIn?.amount, currencyIn?.currency?.decimals)
+            : null
     const sourceChainDisplayName = chains.find(x => x.id === sourceChain)?.displayName || 'N/A'
     const sourceTokenObject = (tokenList || []).find(x => x.address === sourceToken)
     const sourceTokenDisplayName = sourceTokenObject ? sourceTokenObject.symbol : 'N/A'
-    const neededBzzAmount = FixedPointNumber.fromDecimalString(swapData.bzzAmount.toString(), 16)
-    let neededBzzUsdValue: number | null = null
-    const neededDaiUsdValue = swapData.nativeAmount + parseFloat(library.constants.daiDustAmount.toDecimalString())
-    let totalNeededUsdValue: number | null = null
-    if (bzzUsdPrice && selectedTokenUsdPrice && sourceTokenObject?.decimals) {
-        neededBzzUsdValue = parseFloat(neededBzzAmount.toDecimalString()) * bzzUsdPrice
-        totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
-    }
-    const hasSufficientBalance = selectedTokenBalance
-        ? selectedTokenAmountNeeded &&
-          selectedTokenBalance &&
-          selectedTokenAmountNeeded.value <= selectedTokenBalance.value
-        : true
+    const neededBzzAmount = FixedPointNumber.fromFloat(swapData.bzzAmount, 16)
+    const neededDaiUsdValue = swapData.nativeAmount + library.constants.daiDustAmount.toFloat()
+    const neededBzzUsdValue = neededBzzAmount.toFloat() * bzzUsdPrice
+    const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
+    const hasSufficientBalance =
+        selectedTokenBalance && selectedTokenAmountNeeded
+            ? selectedTokenBalance.value >= selectedTokenAmountNeeded.value
+            : true
 
     // send transaction hook in case of xdai source token
     const { sendTransactionAsync } = useSendTransaction()
-
-    // watch bzz price
-    useEffect(() => {
-        return System.runAndSetInterval(() => {
-            library
-                .getGnosisBzzTokenPrice()
-                .then(price => setBzzUsdPrice(price))
-                .catch(error => {
-                    console.error('Error fetching BZZ price:', error)
-                })
-        }, Dates.minutes(1))
-    }, [])
-
-    useEffect(() => {
-        if (!tokenList) {
-            return
-        }
-        const sourceTokenObject: { decimals?: number } | undefined = tokenList.find(x => x.address === sourceToken)
-        if (!sourceTokenObject) {
-            return
-        }
-        if (bzzUsdPrice && selectedTokenUsdPrice && sourceTokenObject.decimals) {
-            const neededDaiUsdValue =
-                swapData.nativeAmount + parseFloat(library.constants.daiDustAmount.toDecimalString())
-            const neededBzzUsdValue = parseFloat(neededBzzAmount.toDecimalString()) * bzzUsdPrice
-            const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1
-            setSelectedTokenAmountNeeded(
-                FixedPointNumber.fromDecimalString(
-                    (totalNeededUsdValue / selectedTokenUsdPrice).toString(),
-                    sourceTokenObject.decimals
-                )
-            )
-        }
-    }, [bzzUsdPrice, selectedTokenUsdPrice, tokenList, sourceToken])
 
     // watch selected token price, balance and quote
     useEffect(() => {
         if (!sourceToken) {
             return
         }
+
         return Arrays.multicall([
             System.runAndSetInterval(() => {
                 library
@@ -159,41 +125,46 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 }
             }, Dates.minutes(1)),
             System.runAndSetInterval(async () => {
-                if (!selectedTokenAmountNeeded) {
+                const neededBzzAmount = FixedPointNumber.fromFloat(swapData.bzzAmount, 16)
+                const neededDaiUsdValue = swapData.nativeAmount + library.constants.daiDustAmount.toFloat()
+                const neededBzzUsdValue = neededBzzAmount.toFloat() * bzzUsdPrice
+                const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
+                const quoteConfiguration = {
+                    user: swapData.sourceAddress,
+                    recipient: swapData.temporaryAddress,
+                    chainId: sourceChain,
+                    toChainId: library.constants.gnosisChainId,
+                    currency: sourceToken,
+                    toCurrency: library.constants.nullAddress, // xDAI
+                    tradeType: 'EXACT_OUTPUT' as const,
+                    amount: FixedPointNumber.fromFloat(totalNeededUsdValue, 18).toString()
+                }
+                const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                     setRelayQuote(null)
                     setLoadingRelayQuote(true)
-                    return
-                } else {
-                    const quoteConfiguration = {
-                        user: swapData.sourceAddress,
-                        recipient: swapData.temporaryAddress,
-                        chainId: sourceChain,
-                        toChainId: library.constants.gnosisChainId,
-                        currency: sourceToken,
-                        toCurrency: library.constants.nullAddress, // xDAI
-                        tradeType: 'EXACT_INPUT' as const,
-                        amount: selectedTokenAmountNeeded.toString()
-                    }
-                    const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
-                        setRelayQuote(null)
-                        setLoadingRelayQuote(true)
-                        try {
-                            const quote = await relayClient.actions.getQuote(quoteConfiguration)
-                            return quote
-                        } catch (error: unknown) {
-                            if (Objects.errorMatches(error, 'no routes found')) {
-                                return null
-                            } else {
-                                throw error
-                            }
+                    try {
+                        const quote = await relayClient.actions.getQuote(quoteConfiguration)
+                        return quote
+                    } catch (error: unknown) {
+                        if (Objects.errorMatches(error, 'no routes found')) {
+                            return null
+                        } else {
+                            throw error
                         }
-                    })
-                    setRelayQuote(quote)
-                    setLoadingRelayQuote(false)
-                }
+                    }
+                })
+                setRelayQuote(quote)
+                setLoadingRelayQuote(false)
             }, Dates.seconds(2))
         ])
-    }, [sourceChain, sourceToken, setRelayQuote, setLoadingRelayQuote, selectedTokenAmountNeeded])
+    }, [
+        sourceChain,
+        sourceToken,
+        setRelayQuote,
+        setLoadingRelayQuote,
+        setSelectedTokenUsdPrice,
+        setSelectedTokenBalance
+    ])
 
     function onBack() {
         setTab(1)
@@ -258,6 +229,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 temporaryAddress: Types.asHexString(swapData.temporaryAddress),
                 temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
                 bzzUsdValue: neededBzzUsdValue,
+                totalDaiValue: FixedPointNumber.fromFloat(totalNeededUsdValue, 18),
                 relayClient,
                 walletClient: walletClient.data,
                 mocked
@@ -279,6 +251,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 temporaryAddress: Types.asHexString(swapData.temporaryAddress),
                 temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
                 bzzUsdValue: neededBzzUsdValue,
+                totalDaiValue: FixedPointNumber.fromFloat(totalNeededUsdValue, 18),
                 relayClient,
                 walletClient: walletClient.data,
                 batchAmount: swapData.batch.amount,
@@ -392,7 +365,6 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                                 setSourceToken('0x0000000000000000000000000000000000000000')
                                 setSelectedTokenBalance(null)
                                 setSelectedTokenUsdPrice(null)
-                                setSelectedTokenAmountNeeded(null)
                             }}
                             onChangeGuard={async chainId => {
                                 try {
@@ -426,8 +398,6 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                             theme={theme}
                             onChange={e => {
                                 setSelectedTokenBalance(null)
-                                setSelectedTokenUsdPrice(null)
-                                setSelectedTokenAmountNeeded(null)
                                 setSourceToken(e)
                             }}
                             value={sourceToken}
@@ -454,12 +424,19 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                             testId="source-token-input"
                         />
                     </LabelSpacing>
-                    <Typography theme={theme} small secondary testId="swap-summary">
-                        You will swap{' '}
-                        {Numbers.toSignificantDigits(selectedTokenAmountNeeded?.toDecimalString() || '0', 3)} (~$
-                        {Numbers.toSignificantDigits(totalNeededUsdValue?.toString() || '0', 2)}){' '}
-                        {sourceTokenDisplayName} from {sourceChainDisplayName} to fund:
-                    </Typography>
+                    {selectedTokenAmountNeeded && selectedTokenUsdPrice ? (
+                        <Typography theme={theme} small secondary testId="swap-summary">
+                            You will swap{' '}
+                            {Numbers.toSignificantDigits(selectedTokenAmountNeeded?.toDecimalString() || '0', 3)}{' '}
+                            {sourceTokenDisplayName} (~$
+                            {(selectedTokenUsdPrice * selectedTokenAmountNeeded.toFloat()).toFixed(2)}) from{' '}
+                            {sourceChainDisplayName} to fund:
+                        </Typography>
+                    ) : (
+                        <Typography theme={theme} small secondary testId="swap-summary">
+                            Swap details are loading...
+                        </Typography>
+                    )}
                     <div className="multichain__row">
                         <div className="multichain__column multichain__column--full">
                             <TokenDisplay

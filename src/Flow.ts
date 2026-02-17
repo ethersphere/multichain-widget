@@ -26,6 +26,7 @@ interface FundingFlowOptions {
     sourceChain: number
     sourceToken: string
     sourceTokenAmount: FixedPointNumber
+    totalDaiValue: FixedPointNumber
     bzzUsdValue: number
     temporaryAddress: `0x${string}`
     temporaryPrivateKey: `0x${string}`
@@ -64,6 +65,7 @@ interface CreateBatchFlowOptions {
     sourceChain: number
     sourceToken: string
     sourceTokenAmount: FixedPointNumber
+    totalDaiValue: FixedPointNumber
     bzzUsdValue: number
     temporaryAddress: `0x${string}`
     temporaryPrivateKey: `0x${string}`

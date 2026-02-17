@@ -29,9 +29,20 @@ interface Props {
     swapData: SwapData
     setSwapData: Dispatch<SetStateAction<SwapData>>
     setInitialChainId: Dispatch<SetStateAction<number | null>>
+    bzzUsdPrice: number | null
 }
 
-export function Tab1({ theme, mode, library, intent, setTab, swapData, setSwapData, setInitialChainId }: Props) {
+export function Tab1({
+    theme,
+    mode,
+    library,
+    intent,
+    setTab,
+    swapData,
+    setSwapData,
+    setInitialChainId,
+    bzzUsdPrice
+}: Props) {
     const { address } = useAccount()
     const chainId = useChainId()
 
@@ -116,7 +127,14 @@ export function Tab1({ theme, mode, library, intent, setTab, swapData, setSwapDa
             <Button
                 theme={theme}
                 onClick={onConnect}
-                disabled={!address || !swapData.targetAddress || !hasEnoughBalance || malformedAddress || wrongChecksum}
+                disabled={
+                    !address ||
+                    !swapData.targetAddress ||
+                    !hasEnoughBalance ||
+                    malformedAddress ||
+                    wrongChecksum ||
+                    bzzUsdPrice === null
+                }
                 testId="continue"
             >
                 Continue
