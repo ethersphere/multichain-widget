@@ -52,7 +52,7 @@ export function Router({ theme, mode, hooks, library, intent, destination, dai, 
             const price = await library.getGnosisBzzTokenPrice()
             setBzzUsdPrice(price)
         }, Dates.minutes(10))
-    })
+    }, [])
 
     if (tab === 1 || initialChainId === null) {
         return (
