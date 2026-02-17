@@ -426,8 +426,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                     </LabelSpacing>
                     {selectedTokenAmountNeeded && selectedTokenUsdPrice ? (
                         <Typography theme={theme} small secondary testId="swap-summary">
-                            You will swap{' '}
-                            {Numbers.toSignificantDigits(selectedTokenAmountNeeded?.toDecimalString() || '0', 3)}{' '}
+                            You will swap {Numbers.toSignificantDigits(selectedTokenAmountNeeded.toDecimalString(), 3)}{' '}
                             {sourceTokenDisplayName} (~$
                             {(selectedTokenUsdPrice * selectedTokenAmountNeeded.toFloat()).toFixed(2)}) from{' '}
                             {sourceChainDisplayName} to fund:
