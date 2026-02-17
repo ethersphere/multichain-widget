@@ -1,6 +1,6 @@
 import { useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
 import { createClient, Execute } from '@relayprotocol/relay-sdk'
-import { MultichainLibrary } from '@upcoming/multichain-library'
+import { MultichainLibrary, xBZZ, xDAI } from '@upcoming/multichain-library'
 import { Arrays, Cache, Dates, FixedPointNumber, Numbers, Objects, Solver, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
 import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
@@ -80,7 +80,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     const sourceChainDisplayName = chains.find(x => x.id === sourceChain)?.displayName || 'N/A'
     const sourceTokenObject = (tokenList || []).find(x => x.address === sourceToken)
     const sourceTokenDisplayName = sourceTokenObject ? sourceTokenObject.symbol : 'N/A'
-    const neededBzzAmount = FixedPointNumber.fromFloat(swapData.bzzAmount, 16)
+    const neededBzzAmount = xBZZ.fromFloat(swapData.bzzAmount)
     const neededDaiUsdValue = swapData.nativeAmount + library.constants.daiDustAmount.toFloat()
     const neededBzzUsdValue = neededBzzAmount.toFloat() * bzzUsdPrice
     const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
@@ -125,7 +125,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 }
             }, Dates.minutes(1)),
             System.runAndSetInterval(async () => {
-                const neededBzzAmount = FixedPointNumber.fromFloat(swapData.bzzAmount, 16)
+                const neededBzzAmount = xBZZ.fromFloat(swapData.bzzAmount)
                 const neededDaiUsdValue = swapData.nativeAmount + library.constants.daiDustAmount.toFloat()
                 const neededBzzUsdValue = neededBzzAmount.toFloat() * bzzUsdPrice
                 const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
@@ -137,7 +137,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                     currency: sourceToken,
                     toCurrency: library.constants.nullAddress, // xDAI
                     tradeType: 'EXACT_OUTPUT' as const,
-                    amount: FixedPointNumber.fromFloat(totalNeededUsdValue, 18).toString()
+                    amount: xDAI.fromFloat(totalNeededUsdValue).toString()
                 }
                 const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                     setRelayQuote(null)
@@ -229,7 +229,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 temporaryAddress: Types.asHexString(swapData.temporaryAddress),
                 temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
                 bzzUsdValue: neededBzzUsdValue,
-                totalDaiValue: FixedPointNumber.fromFloat(totalNeededUsdValue, 18),
+                totalDaiValue: xDAI.fromFloat(totalNeededUsdValue),
                 relayClient,
                 walletClient: walletClient.data,
                 mocked
@@ -251,7 +251,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 temporaryAddress: Types.asHexString(swapData.temporaryAddress),
                 temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
                 bzzUsdValue: neededBzzUsdValue,
-                totalDaiValue: FixedPointNumber.fromFloat(totalNeededUsdValue, 18),
+                totalDaiValue: xDAI.fromFloat(totalNeededUsdValue),
                 relayClient,
                 walletClient: walletClient.data,
                 batchAmount: swapData.batch.amount,

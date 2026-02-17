@@ -1,5 +1,4 @@
-import { MultichainLibrary } from '@upcoming/multichain-library'
-import { FixedPointNumber } from 'cafe-utility'
+import { MultichainLibrary, xDAI } from '@upcoming/multichain-library'
 
 interface Options {
     library: MultichainLibrary
@@ -17,7 +16,7 @@ export function createSushiStep(options: Options) {
             const bzzBefore = await options.library.getGnosisBzzBalance(options.targetAddress)
             context.set('daiBefore', daiBefore)
             context.set('bzzBefore', bzzBefore)
-            const plannedDai = FixedPointNumber.fromFloat(options.bzzUsdValue, 18)
+            const plannedDai = xDAI.fromFloat(options.bzzUsdValue)
             const amount =
                 daiBefore.subtract(options.library.constants.daiDustAmount).compare(plannedDai) === -1
                     ? daiBefore.subtract(options.library.constants.daiDustAmount)

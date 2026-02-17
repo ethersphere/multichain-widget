@@ -1,5 +1,4 @@
-import { MultichainLibrary } from '@upcoming/multichain-library'
-import { FixedPointNumber } from 'cafe-utility'
+import { MultichainLibrary, xBZZ, xDAI } from '@upcoming/multichain-library'
 
 interface Options {
     library: MultichainLibrary
@@ -11,8 +10,8 @@ export function createSushiSyncStep(options: Options) {
     return {
         name: 'sushi-sync',
         action: async (context: Map<string, unknown>) => {
-            const daiBefore = FixedPointNumber.cast(context.get('daiBefore'))
-            const bzzBefore = FixedPointNumber.cast(context.get('bzzBefore'))
+            const daiBefore = xDAI.cast(context.get('daiBefore'))
+            const bzzBefore = xBZZ.cast(context.get('bzzBefore'))
             await options.library.waitForGnosisBzzBalanceToIncrease(options.targetAddress, bzzBefore.value)
             await options.library.waitForGnosisNativeBalanceToDecrease(options.temporaryAddress, daiBefore.value)
         }

@@ -1,5 +1,4 @@
-import { MultichainLibrary } from '@upcoming/multichain-library'
-import { FixedPointNumber } from 'cafe-utility'
+import { MultichainLibrary, xDAI } from '@upcoming/multichain-library'
 
 interface Options {
     library: MultichainLibrary
@@ -11,7 +10,7 @@ export function createTransferSyncStep(options: Options) {
         name: 'transfer-sync',
         transientSkipStepName: 'transfer',
         action: async (context: Map<string, unknown>) => {
-            const daiBefore = FixedPointNumber.cast(context.get('daiBefore'))
+            const daiBefore = xDAI.cast(context.get('daiBefore'))
             await options.library.waitForGnosisNativeBalanceToDecrease(options.temporaryAddress, daiBefore.value)
         }
     }
