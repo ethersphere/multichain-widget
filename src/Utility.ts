@@ -69,6 +69,8 @@ export function selectExplorerForChainId(chainId: number) {
             return 'https://optimistic.etherscan.io'
         case 42161:
             return 'https://arbiscan.io'
+        case 8453:
+            return 'https://basescan.org'
         default:
             return 'https://etherscan.io'
     }
