@@ -1,5 +1,6 @@
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Strings, Types } from 'cafe-utility'
+import { Dispatch, SetStateAction } from 'react'
 
 interface Options {
     library: MultichainLibrary
@@ -7,6 +8,7 @@ interface Options {
     targetAddress: `0x${string}`
     batchAmount: string | bigint
     batchDepth: number
+    setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
 export function createCreateBatchStep(options: Options) {
@@ -25,6 +27,10 @@ export function createCreateBatchStep(options: Options) {
                 nonce: nonce + 1
             })
             const transaction = await options.library.getGnosisTransaction(result.transactionHash)
+            options.setMetadata(previous => ({
+                ...previous,
+                batch: `https://gnosisscan.io/tx/${result.transactionHash}`
+            }))
             const message = {
                 event: 'batch',
                 batchId: result.batchId,

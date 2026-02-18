@@ -1,8 +1,10 @@
-import { Execute, RelayClient } from '@relayprotocol/relay-sdk'
+import { Execute, ProgressData, RelayClient } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { FixedPointNumber } from 'cafe-utility'
+import { Dispatch, SetStateAction } from 'react'
 import { WalletClient } from 'viem'
 import { SendTransactionSignature } from '../Flow'
+import { selectExplorerForChainId } from '../Utility'
 
 interface Options {
     library: MultichainLibrary
@@ -15,6 +17,7 @@ interface Options {
     walletClient: WalletClient
     relayQuote: Execute
     totalDaiValue: FixedPointNumber
+    setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
 export function createRelayStep(options: Options) {
@@ -31,15 +34,25 @@ export function createRelayStep(options: Options) {
                 options.sourceToken === options.library.constants.nullAddress &&
                 options.sourceChain === options.library.constants.gnosisChainId
             ) {
-                await options.sendTransactionAsync({
+                const tx = await options.sendTransactionAsync({
                     to: options.temporaryAddress,
                     value: options.sourceTokenAmount.value
                 })
+                options.setMetadata(previous => ({ ...previous, relay: `https://gnosisscan.io/tx/${tx}` }))
             } else {
                 await options.relayClient.actions.execute({
                     quote: options.relayQuote,
                     wallet: options.walletClient,
-                    onProgress: console.log
+                    onProgress: (data: ProgressData) => {
+                        console.log('Relay progress data', data)
+                        const txHashes = data.txHashes
+                        if (txHashes && txHashes[0]) {
+                            options.setMetadata(previous => ({
+                                ...previous,
+                                relay: `${selectExplorerForChainId(txHashes[0].chainId)}/tx/${txHashes[0].txHash}`
+                            }))
+                        }
+                    }
                 })
             }
         }

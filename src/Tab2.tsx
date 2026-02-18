@@ -60,6 +60,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     const [stepStates, setStepStates] = useState<
         Record<string, 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped'>
     >({})
+    const [metadata, setMetadata] = useState<Record<string, string>>({})
 
     // relay and wagmi hooks
     const relayClient = createClient({ chains: configuredRelayChains })
@@ -171,6 +172,11 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     }
 
     async function onSwapWithErrorHandling() {
+        if (status === 'completed') {
+            setTab(1)
+            return
+        }
+
         try {
             await onSwap()
         } catch (error: unknown) {
@@ -232,7 +238,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 totalDaiValue: xDAI.fromFloat(totalNeededUsdValue),
                 relayClient,
                 walletClient: walletClient.data,
-                mocked
+                mocked,
+                setMetadata
             })
         } else if (mode === 'batch') {
             if (!swapData.batch) {
@@ -256,7 +263,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 walletClient: walletClient.data,
                 batchAmount: swapData.batch.amount,
                 batchDepth: swapData.batch.depth,
-                mocked
+                mocked,
+                setMetadata
             })
         } else {
             console.error('Invalid mode, no solver available')
@@ -343,9 +351,9 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                         Please allow up to 5 minutes for the steps to complete.
                     </Typography>
                     {mode === 'funding' ? (
-                        <FundingProgressTracker theme={theme} progress={stepStates} />
+                        <FundingProgressTracker theme={theme} progress={stepStates} metadata={metadata} />
                     ) : mode === 'batch' ? (
-                        <CreateBatchProgressTracker theme={theme} progress={stepStates} />
+                        <CreateBatchProgressTracker theme={theme} progress={stepStates} metadata={metadata} />
                     ) : null}
                 </>
             ) : null}
@@ -466,16 +474,20 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             <Button
                 theme={theme}
                 onClick={onSwapWithErrorHandling}
-                disabled={status !== 'pending' || !relayQuote || !hasSufficientBalance || !walletClient.data}
+                disabled={
+                    status === 'completed'
+                        ? false
+                        : status !== 'pending' || !relayQuote || !hasSufficientBalance || !walletClient.data
+                }
                 testId="fund"
                 tooltip={
-                    !selectedTokenBalance && relayQuote
+                    status === 'pending' && !selectedTokenBalance && relayQuote
                         ? "Couldn't fetch and verify balance for the selected token. Only proceed if you are sure you have sufficient balance and know what you are doing. Make sure to check the transaction details in your wallet before confirming."
                         : undefined
                 }
-                icon={!selectedTokenBalance && relayQuote ? <AlertIcon /> : undefined}
+                icon={status === 'pending' && !selectedTokenBalance && relayQuote ? <AlertIcon /> : undefined}
             >
-                {hasSufficientBalance ? 'Fund' : 'Insufficient balance'}
+                {status === 'completed' ? 'Start New Swap' : hasSufficientBalance ? 'Fund' : 'Insufficient balance'}
             </Button>
         </div>
     )

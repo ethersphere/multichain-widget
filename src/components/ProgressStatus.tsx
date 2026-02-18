@@ -9,9 +9,10 @@ interface Props {
     children: ReactNode
     status: 'pending' | 'in-progress' | 'completed' | 'failed' | 'skipped'
     testId: string
+    tx?: string
 }
 
-export function ProgressStatus({ theme, children, status, testId }: Props) {
+export function ProgressStatus({ theme, children, status, testId, tx }: Props) {
     let symbol: ReactNode = <StatusIndicator color="#AAAAAA" testId={`${testId}__pending`} />
     if (status === 'skipped') {
         symbol = <StatusIndicator color="#FFDC00" testId={`${testId}__skipped`} />
@@ -32,6 +33,21 @@ export function ProgressStatus({ theme, children, status, testId }: Props) {
             <Typography theme={theme} testId={`${testId}__description`}>
                 {children}
             </Typography>
+            {tx && (
+                <Typography theme={theme} testId={`${testId}__metadata`}>
+                    <a
+                        href={tx}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                            color: theme.buttonBackgroundColor,
+                            fontSize: theme.smallFontSize
+                        }}
+                    >
+                        View transaction
+                    </a>
+                </Typography>
+            )}
         </div>
     )
 }

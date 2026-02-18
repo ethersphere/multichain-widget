@@ -1,6 +1,7 @@
 import { Execute, RelayClient } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { FixedPointNumber, Solver } from 'cafe-utility'
+import { Dispatch, SetStateAction } from 'react'
 import { WalletClient } from 'viem'
 import { createApproveBzzStep } from './steps/ApproveBzzStep'
 import { createCreateBatchStep } from './steps/CreateBatchStep'
@@ -36,6 +37,7 @@ interface FundingFlowOptions {
     walletClient: WalletClient
     relayQuote: Execute
     mocked: boolean
+    setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
 export function createFundingFlow(options: FundingFlowOptions) {
@@ -77,6 +79,7 @@ interface CreateBatchFlowOptions {
     batchAmount: string | bigint
     batchDepth: number
     mocked: boolean
+    setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
 export function createCreateBatchFlow(options: CreateBatchFlowOptions) {

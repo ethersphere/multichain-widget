@@ -1,4 +1,5 @@
 import { MultichainLibrary, xDAI } from '@upcoming/multichain-library'
+import { Dispatch, SetStateAction } from 'react'
 
 interface Options {
     library: MultichainLibrary
@@ -6,6 +7,7 @@ interface Options {
     temporaryAddress: `0x${string}`
     temporaryPrivateKey: `0x${string}`
     targetAddress: `0x${string}`
+    setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
 export function createSushiStep(options: Options) {
@@ -21,11 +23,12 @@ export function createSushiStep(options: Options) {
                 daiBefore.subtract(options.library.constants.daiDustAmount).compare(plannedDai) === -1
                     ? daiBefore.subtract(options.library.constants.daiDustAmount)
                     : plannedDai
-            await options.library.swapOnGnosisAuto({
+            const tx = await options.library.swapOnGnosisAuto({
                 amount: amount.toString(),
                 originPrivateKey: options.temporaryPrivateKey,
                 to: options.targetAddress
             })
+            options.setMetadata(previous => ({ ...previous, sushi: `https://gnosisscan.io/tx/${tx}` }))
         }
     }
 }
