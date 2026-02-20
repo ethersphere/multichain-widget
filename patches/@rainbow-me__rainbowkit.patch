@@ -1,0 +1,12 @@
+diff --git a/dist/index.js b/dist/index.js
+index 51df031744cf6bc40996f5c17abdde84a90244f1..f4674bacd9606d6d77df77d165b30ff44b65a609 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -2738,6 +2738,7 @@ function Dialog({ children, onClose, open, titleId }) {
+         alignItems: mobile ? "flex-end" : "center",
+         "aria-labelledby": titleId,
+         "aria-modal": true,
++        "data-test-id": titleId,
+         className: overlay,
+         onClick: handleBackdropClick,
+         position: "fixed",
