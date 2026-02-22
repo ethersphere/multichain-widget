@@ -22,3 +22,5 @@ export const config: Config = getDefaultConfig({
 export const configuredRelayChains = [mainnet, polygon, optimism, arbitrum, base, gnosis].map(
     convertViemChainToRelayChain
 )
+
+console.log('Relay chains', configuredRelayChains)
