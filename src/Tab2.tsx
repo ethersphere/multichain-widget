@@ -180,7 +180,10 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
         try {
             await onSwap()
         } catch (error: unknown) {
-            if (Objects.errorMatches(error, 'User rejected the request.')) {
+            if (
+                Objects.errorMatches(error, 'User rejected the request') ||
+                Objects.errorMatches(error, 'User cancelled the request')
+            ) {
                 hooks.onUserAbort().then(() => {
                     setTab(1)
                 })
