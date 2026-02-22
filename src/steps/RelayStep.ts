@@ -45,12 +45,14 @@ export function createRelayStep(options: Options) {
                     wallet: options.walletClient,
                     onProgress: (data: ProgressData) => {
                         console.log('Relay progress data', data)
-                        const txHashes = data.txHashes
-                        if (txHashes && txHashes[0]) {
-                            options.setMetadata(previous => ({
-                                ...previous,
-                                relay: `${selectExplorerForChainId(txHashes[0].chainId)}/tx/${txHashes[0].txHash}`
-                            }))
+                        if (data.txHashes) {
+                            const txHash = data.txHashes.find(x => x.txHash.length >= 64)
+                            if (txHash) {
+                                options.setMetadata(previous => ({
+                                    ...previous,
+                                    relay: `${selectExplorerForChainId(txHash.chainId)}/tx/${txHash.txHash}`
+                                }))
+                            }
                         }
                     }
                 })
