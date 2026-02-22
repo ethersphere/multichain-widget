@@ -10,7 +10,7 @@ interface Options {
     setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
-export function createSushiStep(options: Options) {
+export function createSushiStep(options: Options, zeroIndexedAttemptNumber: number) {
     return {
         name: 'sushi',
         action: async (context: Map<string, unknown>) => {
@@ -29,6 +29,14 @@ export function createSushiStep(options: Options) {
                 to: options.targetAddress
             })
             options.setMetadata(previous => ({ ...previous, sushi: `https://gnosisscan.io/tx/${tx}` }))
+            try {
+                await options.library.waitForGnosisTransactionReceipt(tx)
+            } catch (error) {
+                if (zeroIndexedAttemptNumber === 0) {
+                    return 'retry'
+                }
+                throw error
+            }
         }
     }
 }

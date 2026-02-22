@@ -9,7 +9,7 @@ interface Options {
     setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
-export function createTransferStep(options: Options) {
+export function createTransferStep(options: Options, zeroIndexedAttemptNumber: number) {
     return {
         name: 'transfer',
         precondition: async () => {
@@ -26,6 +26,14 @@ export function createTransferStep(options: Options) {
                 amount: daiBefore.subtract(options.library.constants.daiDustAmount).toString()
             })
             options.setMetadata(previous => ({ ...previous, transfer: `https://gnosisscan.io/tx/${tx}` }))
+            try {
+                await options.library.waitForGnosisTransactionReceipt(tx)
+            } catch (error) {
+                if (zeroIndexedAttemptNumber === 0) {
+                    return 'retry'
+                }
+                throw error
+            }
         }
     }
 }
