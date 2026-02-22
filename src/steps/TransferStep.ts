@@ -9,7 +9,7 @@ interface Options {
     setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
-export function createTransferStep(options: Options, zeroIndexedAttemptNumber: number) {
+export function createTransferStep(options: Options) {
     return {
         name: 'transfer',
         precondition: async () => {
@@ -17,7 +17,7 @@ export function createTransferStep(options: Options, zeroIndexedAttemptNumber: n
             const amountToTransfer = dai.subtract(options.library.constants.daiDustAmount)
             return amountToTransfer.value > options.library.constants.daiDustAmount.value
         },
-        action: async (context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>, zeroIndexedAttemptNumber: number) => {
             const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
             context.set('daiBefore', daiBefore)
             const tx = await options.library.transferGnosisNative({

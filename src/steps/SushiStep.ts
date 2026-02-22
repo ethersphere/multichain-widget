@@ -10,10 +10,10 @@ interface Options {
     setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
-export function createSushiStep(options: Options, zeroIndexedAttemptNumber: number) {
+export function createSushiStep(options: Options) {
     return {
         name: 'sushi',
-        action: async (context: Map<string, unknown>) => {
+        action: async (context: Map<string, unknown>, zeroIndexedAttemptNumber: number) => {
             const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
             const bzzBefore = await options.library.getGnosisBzzBalance(options.targetAddress)
             context.set('daiBefore', daiBefore)
