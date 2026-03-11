@@ -57,7 +57,7 @@ export function Tab1({
             malformedAddress = true
             const cleanAddress = Types.asHexString(swapData.targetAddress, { byteLength: 20 })
             malformedAddress = false
-            if (cleanAddress.match(/[A-F]/) && cleanAddress.match(/[a-f]/)) {
+            if (cleanAddress.match(/[A-F]/)) {
                 const checksummed = Elliptic.checksumEncode(Binary.hexToUint8Array(cleanAddress))
                 wrongChecksum = checksummed !== swapData.targetAddress
             }
