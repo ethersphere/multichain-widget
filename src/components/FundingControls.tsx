@@ -7,9 +7,10 @@ interface Props {
     theme: MultichainTheme
     swapData: SwapData
     setSwapData: Dispatch<SetStateAction<SwapData>>
+    setNativeAmountRaw: Dispatch<SetStateAction<string>>
 }
 
-export function FundingControls({ theme, swapData, setSwapData }: Props) {
+export function FundingControls({ theme, swapData, setSwapData, setNativeAmountRaw }: Props) {
     return (
         <div className="multichain__row">
             <NumberInput
@@ -20,6 +21,7 @@ export function FundingControls({ theme, swapData, setSwapData }: Props) {
                 min={0}
                 value={swapData.nativeAmount}
                 onChange={e => setSwapData(x => ({ ...x, nativeAmount: e }))}
+                onChangeRaw={e => setNativeAmountRaw(e)}
                 testId="xdai-input"
             />
             <NumberInput

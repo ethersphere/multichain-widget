@@ -1,7 +1,7 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit'
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Binary, Elliptic, Types } from 'cafe-utility'
-import { Dispatch, SetStateAction } from 'react'
+import { Dispatch, SetStateAction, useState } from 'react'
 import { useAccount, useChainId } from 'wagmi'
 import { BatchControls } from './components/BatchControls'
 import { FundingControls } from './components/FundingControls'
@@ -45,7 +45,9 @@ export function Tab1({
 }: Props) {
     const { address } = useAccount()
     const chainId = useChainId()
+    const [nativeAmountRaw, setNativeAmountRaw] = useState(swapData.nativeAmount.toString())
 
+    const emptyNativeAmount = nativeAmountRaw === ''
     const hasEnoughBalance = swapData.bzzAmount >= MINIMUM_XBZZ
     let malformedAddress = false
     let wrongChecksum = false
@@ -119,7 +121,12 @@ export function Tab1({
                 />
             </LabelSpacing>
             {mode === 'funding' ? (
-                <FundingControls theme={theme} swapData={swapData} setSwapData={setSwapData} />
+                <FundingControls
+                    theme={theme}
+                    swapData={swapData}
+                    setSwapData={setSwapData}
+                    setNativeAmountRaw={setNativeAmountRaw}
+                />
             ) : mode === 'batch' ? (
                 <BatchControls theme={theme} library={library} swapData={swapData} setSwapData={setSwapData} />
             ) : null}
@@ -131,6 +138,7 @@ export function Tab1({
                     !address ||
                     !swapData.targetAddress ||
                     !hasEnoughBalance ||
+                    emptyNativeAmount ||
                     malformedAddress ||
                     wrongChecksum ||
                     bzzUsdPrice === null
@@ -157,6 +165,13 @@ export function Tab1({
                 <Typography theme={theme} testId="error-bad-address-checksum">
                     <Span theme={theme} color={theme.errorTextColor} small>
                         *Address has an invalid checksum. Please check and try again.
+                    </Span>
+                </Typography>
+            )}
+            {emptyNativeAmount && (
+                <Typography theme={theme} testId="error-bad-address-checksum">
+                    <Span theme={theme} color={theme.errorTextColor} small>
+                        *Please enter the amount of xDAI you want to swap (0-10).
                     </Span>
                 </Typography>
             )}

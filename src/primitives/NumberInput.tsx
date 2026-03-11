@@ -9,18 +9,22 @@ interface Props {
     label: string
     value: number
     onChange: (value: number) => void
+    onChangeRaw?: (value: string) => void
     min: number
     max: number
     placeholder: string
     testId: string
 }
 
-export function NumberInput({ theme, label, value, onChange, min, max, placeholder, testId }: Props) {
+export function NumberInput({ theme, label, value, onChange, onChangeRaw, min, max, placeholder, testId }: Props) {
     const [textValue, setTextValue] = useState<string>(value.toString())
     const [errorText, setErrorText] = useState<string | null>(null)
 
     function normalizedOnChange(event: React.ChangeEvent<HTMLInputElement>) {
         let raw = event.target.value
+        if (onChangeRaw) {
+            onChangeRaw(raw)
+        }
         while (raw.startsWith('0') && raw.length > 1 && !['.'].includes(raw[1])) {
             raw = raw.substring(1)
         }
