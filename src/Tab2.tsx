@@ -408,8 +408,10 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                         <AdvancedSelect
                             theme={theme}
                             onChange={e => {
-                                setSelectedTokenBalance(null)
-                                setSourceToken(e)
+                                if (e !== sourceToken) {
+                                    setSelectedTokenBalance(null)
+                                    setSourceToken(e)
+                                }
                             }}
                             value={sourceToken}
                             options={(tokenList || [])
