@@ -23,7 +23,7 @@ export function createMockedCreateBatchStep(options: Options) {
                 blockNumber: '0x2aa1944'
             }
             console.log('Postage batch created', message)
-            postMessage(message, '*')
+            window.parent.postMessage(message, '*')
             context.set('batchId', batchId)
         }
     }

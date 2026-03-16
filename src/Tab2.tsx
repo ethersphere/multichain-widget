@@ -285,11 +285,11 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             onError: async error => {
                 console.error('Swap flow error:', error)
                 await hooks.onFatalError(error)
-                postMessage({ event: 'error', error }, '*')
+                window.parent.postMessage({ event: 'error', error }, '*')
             },
             onFinish: async () => {
                 await hooks.onCompletion()
-                postMessage({ event: 'finish' }, '*')
+                window.parent.postMessage({ event: 'finish' }, '*')
             }
         })
 
@@ -309,7 +309,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             )
             console.error('Swap flow error:', error)
             await hooks.onFatalError(error)
-            postMessage({ event: 'error', error }, '*')
+            window.parent.postMessage({ event: 'error', error }, '*')
         }
     }
 

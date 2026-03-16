@@ -39,7 +39,7 @@ export function createCreateBatchStep(options: Options) {
                 blockNumber: transaction.blockNumber
             }
             console.log('Postage batch created', message)
-            postMessage(message, '*')
+            window.parent.postMessage(message, '*')
             context.set('batchId', result.batchId)
         }
     }
