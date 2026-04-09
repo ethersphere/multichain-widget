@@ -22,6 +22,7 @@ import { LabelSpacing } from './primitives/LabelSpacing'
 import { Span } from './primitives/Span'
 import { TextInput } from './primitives/TextInput'
 import { Typography } from './primitives/Typography'
+import { getRelayQuoteWithRetries } from './RelayHelper'
 import { SwapData } from './SwapData'
 import { getQueryParam, shortenHash } from './Utility'
 
@@ -143,20 +144,12 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                     setRelayQuote(null)
                     setLoadingRelayQuote(true)
-                    try {
-                        const quote = await relayClient.actions.getQuote(quoteConfiguration)
-                        return quote
-                    } catch (error: unknown) {
-                        if (Objects.errorMatches(error, 'no routes found')) {
-                            return null
-                        } else {
-                            throw error
-                        }
-                    }
+                    const quote = await getRelayQuoteWithRetries(relayClient, quoteConfiguration)
+                    return quote
                 })
                 setRelayQuote(quote)
                 setLoadingRelayQuote(false)
-            }, Dates.seconds(2))
+            }, Dates.seconds(30))
         ])
     }, [
         sourceChain,
