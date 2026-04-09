@@ -95,7 +95,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     const { sendTransactionAsync } = useSendTransaction()
 
     useEffect(() => {
-        System.runAndSetInterval(() => {
+        return System.runAndSetInterval(() => {
             library
                 .getTokenPrice(sourceToken as `0x${string}`, sourceChain)
                 .then(price => setSelectedTokenUsdPrice(price))
@@ -106,7 +106,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     }, [library, sourceToken, sourceChain, setSelectedTokenUsdPrice])
 
     useEffect(() => {
-        System.runAndSetInterval(async () => {
+        return System.runAndSetInterval(async () => {
             try {
                 const token = sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`)
                 const cacheKey = `${swapData.sourceAddress}-${sourceChain}-${token}`
