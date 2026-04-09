@@ -24,6 +24,7 @@ export function createSushiStep(options: Options) {
                     ? daiBefore.subtract(options.library.constants.daiDustAmount)
                     : plannedDai
             const tx = await options.library.swapOnGnosisAuto({
+                inputToken: 'xDAI',
                 amount: amount.toString(),
                 originPrivateKey: options.temporaryPrivateKey,
                 to: options.targetAddress

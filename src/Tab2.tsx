@@ -1,7 +1,7 @@
 import { useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
 import { createClient, Execute } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary, xBZZ, xDAI } from '@upcoming/multichain-library'
-import { Arrays, Cache, Dates, FixedPointNumber, Numbers, Objects, Solver, System, Types } from 'cafe-utility'
+import { Cache, Dates, FixedPointNumber, Numbers, Objects, Solver, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
 import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
 import { getBalance } from 'wagmi/actions'
@@ -94,71 +94,72 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     // send transaction hook in case of xdai source token
     const { sendTransactionAsync } = useSendTransaction()
 
-    // watch selected token price, balance and quote
+    useEffect(() => {
+        System.runAndSetInterval(() => {
+            library
+                .getTokenPrice(sourceToken as `0x${string}`, sourceChain)
+                .then(price => setSelectedTokenUsdPrice(price))
+                .catch(error => {
+                    console.error('Error fetching selected token price:', error)
+                })
+        }, Dates.minutes(1))
+    }, [library, sourceToken, sourceChain, setSelectedTokenUsdPrice])
+
+    useEffect(() => {
+        System.runAndSetInterval(async () => {
+            try {
+                const token = sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`)
+                const cacheKey = `${swapData.sourceAddress}-${sourceChain}-${token}`
+                const balance = await Cache.get(cacheKey, Dates.minutes(1), async () =>
+                    getBalance(config, {
+                        address: swapData.sourceAddress as `0x${string}`,
+                        token,
+                        chainId: sourceChain
+                    })
+                )
+                setSelectedTokenBalance(balance)
+            } catch (error) {
+                console.error('Error fetching selected token balance:', error)
+            }
+        }, Dates.minutes(1))
+    }, [swapData.sourceAddress, sourceChain, sourceToken, library, setSelectedTokenBalance])
+
     useEffect(() => {
         if (!sourceToken) {
             return
         }
-
-        return Arrays.multicall([
-            System.runAndSetInterval(() => {
-                library
-                    .getTokenPrice(sourceToken as `0x${string}`, sourceChain)
-                    .then(price => setSelectedTokenUsdPrice(price))
-                    .catch(error => {
-                        console.error('Error fetching selected token price:', error)
-                    })
-            }, Dates.minutes(1)),
-            System.runAndSetInterval(async () => {
-                try {
-                    const token =
-                        sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`)
-                    const cacheKey = `${swapData.sourceAddress}-${sourceChain}-${token}`
-                    const balance = await Cache.get(cacheKey, Dates.minutes(1), async () =>
-                        getBalance(config, {
-                            address: swapData.sourceAddress as `0x${string}`,
-                            token,
-                            chainId: sourceChain
-                        })
-                    )
-                    setSelectedTokenBalance(balance)
-                } catch (error) {
-                    console.error('Error fetching selected token balance:', error)
-                }
-            }, Dates.minutes(1)),
-            System.runAndSetInterval(async () => {
-                const neededBzzAmount = xBZZ.fromFloat(swapData.bzzAmount)
-                const neededDaiUsdValue = swapData.nativeAmount + library.constants.daiDustAmount.toFloat()
-                const neededBzzUsdValue = neededBzzAmount.toFloat() * bzzUsdPrice
-                const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
-                const quoteConfiguration = {
-                    user: swapData.sourceAddress,
-                    recipient: swapData.temporaryAddress,
-                    chainId: sourceChain,
-                    toChainId: library.constants.gnosisChainId,
-                    currency: sourceToken,
-                    toCurrency: library.constants.nullAddress, // xDAI
-                    tradeType: 'EXACT_OUTPUT' as const,
-                    amount: xDAI.fromFloat(totalNeededUsdValue).toString()
-                }
-                const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
-                    setRelayQuote(null)
-                    setLoadingRelayQuote(true)
-                    const quote = await getRelayQuoteWithRetries(relayClient, quoteConfiguration)
-                    return quote
-                })
-                setRelayQuote(quote)
-                setLoadingRelayQuote(false)
-            }, Dates.seconds(30))
-        ])
-    }, [
-        sourceChain,
-        sourceToken,
-        setRelayQuote,
-        setLoadingRelayQuote,
-        setSelectedTokenUsdPrice,
-        setSelectedTokenBalance
-    ])
+        return System.runAndSetInterval(async () => {
+            if (!selectedTokenBalance || !selectedTokenUsdPrice) {
+                return
+            }
+            const neededBzzAmount = xBZZ.fromFloat(swapData.bzzAmount)
+            const neededDaiUsdValue = swapData.nativeAmount + library.constants.daiDustAmount.toFloat()
+            const neededBzzUsdValue = neededBzzAmount.toFloat() * bzzUsdPrice
+            const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
+            const amount = FixedPointNumber.fromFloat(
+                totalNeededUsdValue / selectedTokenUsdPrice,
+                selectedTokenBalance.decimals
+            )
+            const quoteConfiguration = {
+                user: swapData.sourceAddress,
+                recipient: swapData.temporaryAddress,
+                chainId: sourceChain,
+                toChainId: library.constants.gnosisChainId,
+                currency: sourceToken,
+                toCurrency: library.constants.nullAddress, // xDAI
+                tradeType: 'EXACT_INPUT' as const,
+                amount: amount.toString()
+            }
+            const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
+                setRelayQuote(null)
+                setLoadingRelayQuote(true)
+                const quote = await getRelayQuoteWithRetries(relayClient, quoteConfiguration)
+                return quote
+            })
+            setRelayQuote(quote)
+            setLoadingRelayQuote(false)
+        }, Dates.seconds(30))
+    }, [selectedTokenBalance, sourceChain, sourceToken, selectedTokenUsdPrice, setRelayQuote, setLoadingRelayQuote])
 
     function onBack() {
         setTab(1)
