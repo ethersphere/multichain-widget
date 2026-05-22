@@ -208,3 +208,7 @@ Example:
 ## Mocking
 
 Adding the `mocked=true` query param to the widget URL will make the widget use mocked data and skip actual transactions. This is useful for testing and development purposes.
+
+## Maintainers
+
+- [Cafe137](https://github.com/Cafe137)
