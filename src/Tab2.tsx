@@ -2,7 +2,7 @@ import { useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
 import { createClient, Execute } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary, xBZZ, xDAI } from '@upcoming/multichain-library'
 import { Cache, Dates, FixedPointNumber, Numbers, Objects, Solver, System, Types } from 'cafe-utility'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
 import { getBalance } from 'wagmi/actions'
 import { CreateBatchProgressTracker } from './components/CreateBatchProgressTracker'
@@ -63,8 +63,13 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     >({})
     const [metadata, setMetadata] = useState<Record<string, string>>({})
 
+    // keep latest quote inputs in a ref so the interval callback reads fresh values
+    // without restarting the effect on every keystroke
+    const quoteInputsRef = useRef({ bzzAmount: swapData.bzzAmount, nativeAmount: swapData.nativeAmount, bzzUsdPrice })
+    quoteInputsRef.current = { bzzAmount: swapData.bzzAmount, nativeAmount: swapData.nativeAmount, bzzUsdPrice }
+
     // relay and wagmi hooks
-    const relayClient = createClient({ chains: configuredRelayChains })
+    const relayClient = useMemo(() => createClient({ chains: configuredRelayChains }), [])
     const walletClient = useWalletClient()
     const { chains: relayChains } = useRelayChains()
     const configuredChains = useChains()
@@ -110,12 +115,18 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             try {
                 const token = sourceToken === library.constants.nullAddress ? undefined : (sourceToken as `0x${string}`)
                 const cacheKey = `${swapData.sourceAddress}-${sourceChain}-${token}`
-                const balance = await Cache.get(cacheKey, Dates.minutes(1), async () =>
-                    getBalance(config, {
-                        address: swapData.sourceAddress as `0x${string}`,
-                        token,
-                        chainId: sourceChain
-                    })
+                const balance = await Cache.get(cacheKey, Dates.minutes(1), () =>
+                    System.withRetries(
+                        () => getBalance(config, {
+                            address: swapData.sourceAddress as `0x${string}`,
+                            token,
+                            chainId: sourceChain
+                        }),
+                        5,
+                        Dates.seconds(1),
+                        Dates.seconds(5),
+                        console.error
+                    )
                 )
                 setSelectedTokenBalance(balance)
             } catch (error) {
@@ -132,9 +143,10 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             if (!selectedTokenBalance || !selectedTokenUsdPrice) {
                 return
             }
-            const neededBzzAmount = xBZZ.fromFloat(swapData.bzzAmount)
-            const neededDaiUsdValue = swapData.nativeAmount + library.constants.daiDustAmount.toFloat()
-            const neededBzzUsdValue = neededBzzAmount.toFloat() * bzzUsdPrice
+            const { bzzAmount, nativeAmount, bzzUsdPrice: currentBzzUsdPrice } = quoteInputsRef.current
+            const neededBzzAmount = xBZZ.fromFloat(bzzAmount)
+            const neededDaiUsdValue = nativeAmount + library.constants.daiDustAmount.toFloat()
+            const neededBzzUsdValue = neededBzzAmount.toFloat() * currentBzzUsdPrice
             const totalNeededUsdValue = (neededBzzUsdValue + neededDaiUsdValue) * 1.1 // +10% slippage
             const amount = FixedPointNumber.fromFloat(
                 totalNeededUsdValue / selectedTokenUsdPrice,
@@ -150,14 +162,16 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 tradeType: 'EXACT_INPUT' as const,
                 amount: amount.toString()
             }
-            const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
-                setRelayQuote(null)
-                setLoadingRelayQuote(true)
-                const quote = await getRelayQuoteWithRetries(relayClient, quoteConfiguration)
-                return quote
-            })
-            setRelayQuote(quote)
-            setLoadingRelayQuote(false)
+            try {
+                const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
+                    setRelayQuote(null)
+                    setLoadingRelayQuote(true)
+                    return await getRelayQuoteWithRetries(relayClient, quoteConfiguration)
+                })
+                setRelayQuote(quote)
+            } finally {
+                setLoadingRelayQuote(false)
+            }
         }, Dates.seconds(30))
     }, [selectedTokenBalance, sourceChain, sourceToken, selectedTokenUsdPrice, setRelayQuote, setLoadingRelayQuote])
 
@@ -215,8 +229,6 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             event.preventDefault()
             event.returnValue = ''
         }
-
-        window.addEventListener('beforeunload', beforeUnload)
 
         const mocked = getQueryParam('mocked') === 'true'
 
@@ -292,6 +304,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
         const couldLock = await lock.couldLock()
 
         if (couldLock === true) {
+            window.addEventListener('beforeunload', beforeUnload)
             await solver.execute().finally(async () => {
                 window.removeEventListener('beforeunload', beforeUnload)
                 await lock.unlock()
@@ -370,6 +383,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                                 setSourceToken('0x0000000000000000000000000000000000000000')
                                 setSelectedTokenBalance(null)
                                 setSelectedTokenUsdPrice(null)
+                                setRelayQuote(null)
+                                setLoadingRelayQuote(true)
                             }}
                             onChangeGuard={async chainId => {
                                 try {
@@ -404,6 +419,9 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                             onChange={e => {
                                 if (e !== sourceToken) {
                                     setSelectedTokenBalance(null)
+                                    setSelectedTokenUsdPrice(null)
+                                    setRelayQuote(null)
+                                    setLoadingRelayQuote(true)
                                     setSourceToken(e)
                                 }
                             }}
