@@ -1,6 +1,6 @@
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Binary, Dates, Elliptic, Strings, System, Types } from 'cafe-utility'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Intent } from './Intent'
 import { MultichainHooks } from './MultichainHooks'
 import { MultichainMode } from './MultichainMode'
@@ -23,10 +23,11 @@ interface Props {
 }
 
 export function Router({ theme, mode, hooks, library, intent, destination, dai, bzz }: Props) {
-    const sessionKeyRef = useRef<`0x${string}`>(
-        Types.asHexString(localStorage.getItem(LOCAL_STORAGE_KEY) || Strings.randomHex(64))
-    )
-    const sessionKey = sessionKeyRef.current
+    const sessionKey = Types.asHexString(localStorage.getItem(LOCAL_STORAGE_KEY) || Strings.randomHex(64))
+    if (localStorage.getItem(LOCAL_STORAGE_KEY) !== sessionKey) {
+        localStorage.setItem(LOCAL_STORAGE_KEY, sessionKey)
+        localStorage.setItem(`${LOCAL_STORAGE_KEY}_${Date.now()}`, sessionKey)
+    }
 
     const [bzzUsdPrice, setBzzUsdPrice] = useState<number | null>(null)
     const [swapData, setSwapData] = useState<SwapData>({
@@ -47,22 +48,11 @@ export function Router({ theme, mode, hooks, library, intent, destination, dai, 
     const [initialChainId, setInitialChainId] = useState<number | null>(null)
 
     useEffect(() => {
-        if (localStorage.getItem(LOCAL_STORAGE_KEY) !== sessionKey) {
-            localStorage.setItem(LOCAL_STORAGE_KEY, sessionKey)
-            localStorage.setItem(`${LOCAL_STORAGE_KEY}_${Date.now()}`, sessionKey)
-        }
-    }, [sessionKey])
-
-    useEffect(() => {
         return System.runAndSetInterval(async () => {
-            try {
-                const price = await library.getGnosisBzzTokenPrice()
-                setBzzUsdPrice(price)
-            } catch (error) {
-                console.error('Error fetching BZZ token price:', error)
-            }
+            const price = await library.getGnosisBzzTokenPrice()
+            setBzzUsdPrice(price)
         }, Dates.minutes(10))
-    }, [library])
+    }, [])
 
     if (tab === 1 || initialChainId === null) {
         return (

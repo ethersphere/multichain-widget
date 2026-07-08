@@ -91,18 +91,16 @@ export function AdvancedSelect({ theme, value, label, onChange, onChangeGuard, o
                                 paddingBottom: theme.inputVerticalPadding
                             }}
                             onClick={async () => {
-                                try {
-                                    if (onChangeGuard) {
-                                        const allowed = await onChangeGuard(option.value)
+                                if (onChangeGuard) {
+                                    await onChangeGuard(option.value).then(allowed => {
                                         if (allowed) {
                                             onChange(option.value)
                                         }
-                                    } else {
-                                        onChange(option.value)
-                                    }
-                                } finally {
-                                    setOpen(false)
+                                    })
+                                } else {
+                                    onChange(option.value)
                                 }
+                                setOpen(false)
                             }}
                         >
                             {option.image ? (
