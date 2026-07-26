@@ -37,6 +37,10 @@ export function MultichainWidget({ theme, hooks, settings, intent, destination, 
     const mergedHooks = Objects.deepMerge2(getDefaultHooks(), hooks || {})
     const library = new MultichainLibrary(settings)
 
+    // TEMP: debug access for testing the contract quote — remove before commit
+    // @ts-expect-error debug helper
+    window.lib = library
+
     const queryParamDestination = getQueryParam('destination')
     const queryParamIntent = getQueryParam('intent').toLowerCase()
     const queryParamDai = getQueryParam('dai')

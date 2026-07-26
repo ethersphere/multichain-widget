@@ -13,12 +13,18 @@ import { createMockedSushiStep } from './steps/MockedSushiStep'
 import { createMockedSushiSyncStep } from './steps/MockedSushiSyncStep'
 import { createMockedTransferStep } from './steps/MockedTransferStep'
 import { createMockedTransferSyncStep } from './steps/MockedTransferSyncStep'
+import { createMockedDepositStep } from './steps/MockedDepositStep'
+import { createMockedDepositSyncStep } from './steps/MockedDepositSyncStep'
 import { createRelayStep } from './steps/RelayStep'
 import { createRelaySyncStep } from './steps/RelaySyncStep'
 import { createSushiStep } from './steps/SushiStep'
 import { createSushiSyncStep } from './steps/SushiSyncStep'
 import { createTransferStep } from './steps/TransferStep'
 import { createTransferSyncStep } from './steps/TransferSyncStep'
+import { createDepositStep } from './steps/DepositStep'
+import { createDepositSyncStep } from './steps/DepositSyncStep'
+import { createRelayToBzzStep } from './steps/RelayToBzzStep'
+import { createRelayBzzSyncStep } from './steps/RelayBzzSyncStep'
 
 export type SendTransactionSignature = (tx: { to: `0x${string}`; value: bigint }) => Promise<`0x${string}`>
 
@@ -51,6 +57,7 @@ export function createFundingFlow(options: FundingFlowOptions) {
         solver.addStep(createMockedTransferStep(options))
         solver.addStep(createMockedTransferSyncStep(options))
     } else {
+
         solver.addStep(createRelayStep(options))
         solver.addStep(createRelaySyncStep(options))
         solver.addStep(createSushiStep(options))
@@ -105,5 +112,39 @@ export function createCreateBatchFlow(options: CreateBatchFlowOptions) {
         solver.addStep(createTransferSyncStep(options))
     }
 
+    return solver
+}
+
+export function createGnosisFundingFlow(options: FundingFlowOptions) {
+    const solver = new Solver()
+
+    if (options.mocked) {
+        solver.addStep(createMockedDepositStep(options))
+        solver.addStep(createMockedDepositSyncStep())
+        solver.addStep(createMockedSushiStep(options))
+        solver.addStep(createMockedSushiSyncStep(options))
+        solver.addStep(createMockedTransferStep(options))
+        solver.addStep(createMockedTransferSyncStep(options))
+    } else {
+        solver.addStep(createDepositStep(options))
+        solver.addStep(createDepositSyncStep(options))
+        solver.addStep(createSushiStep(options))
+        solver.addStep(createSushiSyncStep(options))
+        solver.addStep(createTransferStep(options))
+        solver.addStep(createTransferSyncStep(options))
+    }
+
+    return solver
+}
+
+export function createOtherChainFundingFlow(options: FundingFlowOptions) {
+    const solver = new Solver()
+    if (options.mocked) {
+        solver.addStep(createMockedRelayStep(options))
+        solver.addStep(createMockedRelaySyncStep(options))
+    } else {
+        solver.addStep(createRelayToBzzStep(options))
+        solver.addStep(createRelayBzzSyncStep(options))
+    }
     return solver
 }

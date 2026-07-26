@@ -10,7 +10,7 @@ import { FundingProgressTracker } from './components/FundingProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
 import { config, configuredRelayChains } from './Config'
-import { createCreateBatchFlow, createFundingFlow } from './Flow'
+import { createCreateBatchFlow, createGnosisFundingFlow, createOtherChainFundingFlow } from './Flow'
 import { AlertIcon } from './icons/AlertIcon'
 import { createLock } from './Lock'
 import { MultichainHooks } from './MultichainHooks'
@@ -140,15 +140,31 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 totalNeededUsdValue / selectedTokenUsdPrice,
                 selectedTokenBalance.decimals
             )
-            const quoteConfiguration = {
+
+            const isGnosis = sourceChain === library.constants.gnosisChainId
+
+            const quoteConfiguration =  isGnosis ? {
                 user: swapData.sourceAddress,
                 recipient: swapData.temporaryAddress,
                 chainId: sourceChain,
                 toChainId: library.constants.gnosisChainId,
                 currency: sourceToken,
-                toCurrency: library.constants.nullAddress, // xDAI
+                toCurrency: library.constants.nullAddress,
                 tradeType: 'EXACT_INPUT' as const,
-                amount: amount.toString()
+                amount: amount.toString(),
+                topUpGas: false
+            } : {
+                // non-Gnosis: deliver BZZ + gas top-up straight to the bee node
+                user: swapData.sourceAddress,
+                recipient: swapData.targetAddress,
+                chainId: sourceChain,
+                toChainId: library.constants.gnosisChainId,
+                currency: sourceToken,
+                toCurrency: library.constants.bzzGnosisAddress,
+                tradeType: 'EXACT_OUTPUT' as const,
+                amount: neededBzzAmount.toString(),
+                topupGas: true,
+                topupGasAmount: Math.round(swapData.nativeAmount * 1_000_000).toString() // This is 6 decimal format, need to check this!
             }
             const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                 setRelayQuote(null)
@@ -221,7 +237,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
         const mocked = getQueryParam('mocked') === 'true'
 
         if (mode === 'funding') {
-            solver = createFundingFlow({
+            const fundingFlow = sourceChain === library.constants.gnosisChainId ? createGnosisFundingFlow : createOtherChainFundingFlow
+            solver = fundingFlow({
                 library,
                 relayQuote,
                 sourceChain,
@@ -348,7 +365,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                         Please allow up to 5 minutes for the steps to complete.
                     </Typography>
                     {mode === 'funding' ? (
-                        <FundingProgressTracker theme={theme} progress={stepStates} metadata={metadata} />
+                        <FundingProgressTracker theme={theme} progress={stepStates} metadata={metadata} isOtherChain={sourceChain != library.constants.gnosisChainId} />
                     ) : mode === 'batch' ? (
                         <CreateBatchProgressTracker theme={theme} progress={stepStates} metadata={metadata} />
                     ) : null}
