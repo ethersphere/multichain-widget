@@ -152,9 +152,9 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 toCurrency: library.constants.nullAddress,
                 tradeType: 'EXACT_INPUT' as const,
                 amount: amount.toString(),
-                topUpGas: false
+                topupGas: false
             } : {
-                // non-Gnosis: deliver BZZ + gas top-up straight to the bee node
+                // non-Gnosis: deliver BZZ + gas top-up straight to the bee node address, two new parameters: topupGas and topupGasAmount
                 user: swapData.sourceAddress,
                 recipient: swapData.targetAddress,
                 chainId: sourceChain,
@@ -164,7 +164,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 tradeType: 'EXACT_OUTPUT' as const,
                 amount: neededBzzAmount.toString(),
                 topupGas: true,
-                topupGasAmount: Math.round(swapData.nativeAmount * 1_000_000).toString() // This is 6 decimal format, need to check this!
+                topupGasAmount: Math.round(swapData.nativeAmount * 1_000_000).toString() // 6 Decimal format
             }
             const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                 setRelayQuote(null)

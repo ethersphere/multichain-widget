@@ -16,7 +16,7 @@
         "dist"
     ],
     "scripts": {
-        "start": "vite",
+        "start": "vite --open",
         "build": "vite build --base=./ && tsc --emitDeclarationOnly",
         "check": "tsc --noEmit"
     },
