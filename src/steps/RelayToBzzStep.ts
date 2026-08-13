@@ -19,12 +19,12 @@ export function createRelayToBzzStep(options: Options) {
         action: async (context: Map<string, unknown>) => {
             const bzzBefore = await options.library.getGnosisBzzBalance(options.targetAddress)
             context.set('bzzBefore', bzzBefore)
-            
+
             // Sometimes there is a time delay with the fetched quote and config quote on Relay, if it's not the same,
             // we need to throw error, otherwise gas pop-up will not happen and have to wait for a new quote to be fetched
 
             const topUp = (options.relayQuote as any)?.details?.currencyGasTopup
-            if(!topUp) {
+            if (!topUp) {
                 throw new Error('Relay quote does not include a gas topup amount')
             }
 

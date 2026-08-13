@@ -36,11 +36,6 @@ export function MultichainWidget({ theme, hooks, settings, intent, destination, 
     const mergedTheme = Objects.deepMerge2(getDefaultMultichainTheme(), theme || {})
     const mergedHooks = Objects.deepMerge2(getDefaultHooks(), hooks || {})
     const library = new MultichainLibrary(settings)
-
-    // TEMP: debug access for testing the contract quote — remove before commit
-    // @ts-expect-error debug helper
-    window.lib = library
-
     const queryParamDestination = getQueryParam('destination')
     const queryParamIntent = getQueryParam('intent').toLowerCase()
     const queryParamDai = getQueryParam('dai')
@@ -51,10 +46,10 @@ export function MultichainWidget({ theme, hooks, settings, intent, destination, 
     const resolvedIntent: Intent = intent
         ? intent
         : queryParamIntent === 'initial-funding'
-        ? 'initial-funding'
-        : queryParamIntent === 'postage-batch'
-        ? 'postage-batch'
-        : 'arbitrary'
+          ? 'initial-funding'
+          : queryParamIntent === 'postage-batch'
+            ? 'postage-batch'
+            : 'arbitrary'
     const resolvedDai = dai ? dai : queryParamDai ? Number(queryParamDai) : 0.5
     const resolvedBzz = bzz ? bzz : queryParamBzz ? Number(queryParamBzz) : 10
     const resolvedMode: MultichainMode = queryParamMode === 'batch' ? 'batch' : 'funding'

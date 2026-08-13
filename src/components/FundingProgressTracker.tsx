@@ -10,11 +10,11 @@ interface Props {
 }
 
 export function FundingProgressTracker({ theme, progress, metadata, isOtherChain }: Props) {
-    if(isOtherChain) {
+    if (isOtherChain) {
         return (
             <LabelSpacing theme={theme}>
                 <ProgressStatus theme={theme} status={progress.relay} testId="status-step-1" tx={metadata.relay}>
-                    Cross-Swaping with Relay
+                    Cross-Swapping with Relay
                 </ProgressStatus>
                 <ProgressStatus theme={theme} status={progress['relay-sync']} testId="status-step-2">
                     Sync
@@ -24,7 +24,6 @@ export function FundingProgressTracker({ theme, progress, metadata, isOtherChain
     }
     return (
         <LabelSpacing theme={theme}>
-
             <ProgressStatus theme={theme} status={progress.deposit} testId="status-step-1" tx={metadata.deposit}>
                 Depositing xDAI
             </ProgressStatus>

@@ -3,10 +3,12 @@ import { Objects, System } from 'cafe-utility'
 
 const MAX_RETRIES = 10
 
-export async function getRelayQuoteWithRetries(relayClient: RelayClient, quoteConfiguration: GetQuoteParameters & { topupGas?: boolean; topupGasAmount?: string }) {
-
+export async function getRelayQuoteWithRetries(
+    relayClient: RelayClient,
+    quoteConfiguration: GetQuoteParameters & { topupGas?: boolean; topupGasAmount?: string }
+) {
     // translate SDK param names → raw API param names, so we won't get any error with params
-    
+
     const body = {
         user: quoteConfiguration.user,
         recipient: quoteConfiguration.recipient,
@@ -16,11 +18,10 @@ export async function getRelayQuoteWithRetries(relayClient: RelayClient, quoteCo
         destinationCurrency: quoteConfiguration.toCurrency,
         amount: quoteConfiguration.amount,
         tradeType: quoteConfiguration.tradeType,
-        referrer: 'localhost',
         topupGas: quoteConfiguration.topupGas,
         topupGasAmount: quoteConfiguration.topupGasAmount,
         explicitDeposit: true,
-        useDepositAddress: false,
+        useDepositAddress: false
     }
 
     for (let attempts = 0; attempts < MAX_RETRIES; attempts++) {
@@ -30,7 +31,8 @@ export async function getRelayQuoteWithRetries(relayClient: RelayClient, quoteCo
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(body)
+                body: JSON.stringify(body),
+                signal: AbortSignal.timeout(30_3000) // 30 seconds timeout
             })
             if (!response.ok) {
                 const errBody = await response.json().catch(() => ({}))

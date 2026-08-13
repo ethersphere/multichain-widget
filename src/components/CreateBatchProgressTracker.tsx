@@ -11,9 +11,9 @@ interface Props {
 export function CreateBatchProgressTracker({ theme, progress, metadata }: Props) {
     return (
         <LabelSpacing theme={theme}>
-                <ProgressStatus theme={theme} status={progress.relay} testId="status-step-1" tx={metadata.relay}>
-                    Cross-swap to xDAI on Relay
-                </ProgressStatus>
+            <ProgressStatus theme={theme} status={progress.relay} testId="status-step-1" tx={metadata.relay}>
+                Cross-swap to xDAI on Relay
+            </ProgressStatus>
             <ProgressStatus theme={theme} status={progress['relay-sync']} testId="status-step-2">
                 Sync
             </ProgressStatus>

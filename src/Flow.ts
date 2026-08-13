@@ -57,7 +57,6 @@ export function createFundingFlow(options: FundingFlowOptions) {
         solver.addStep(createMockedTransferStep(options))
         solver.addStep(createMockedTransferSyncStep(options))
     } else {
-
         solver.addStep(createRelayStep(options))
         solver.addStep(createRelaySyncStep(options))
         solver.addStep(createSushiStep(options))

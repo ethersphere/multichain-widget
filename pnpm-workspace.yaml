@@ -3,7 +3,5 @@ allowBuilds:
   esbuild: false
   keccak: false
   utf-8-validate: false
-overrides:
-  '@upcoming/multichain-library': link:../multichain-library
 patchedDependencies:
   '@rainbow-me/rainbowkit': patches/@rainbow-me__rainbowkit.patch
