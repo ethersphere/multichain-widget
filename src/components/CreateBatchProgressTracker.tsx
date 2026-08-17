@@ -17,6 +17,7 @@ export function CreateBatchProgressTracker({ theme, progress, metadata }: Props)
             <ProgressStatus theme={theme} status={progress['relay-sync']} testId="status-step-2">
                 Sync
             </ProgressStatus>
+
             <ProgressStatus theme={theme} status={progress.sushi} testId="status-step-3" tx={metadata.sushi}>
                 Swap xDAI to xBZZ on Sushi
             </ProgressStatus>

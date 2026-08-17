@@ -1,2 +1,7 @@
+allowBuilds:
+  bufferutil: false
+  esbuild: false
+  keccak: false
+  utf-8-validate: false
 patchedDependencies:
   '@rainbow-me/rainbowkit': patches/@rainbow-me__rainbowkit.patch
