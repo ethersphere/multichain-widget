@@ -3,6 +3,7 @@ import { MultichainLibrary } from '@upcoming/multichain-library'
 import { FixedPointNumber, System } from 'cafe-utility'
 import { WalletClient } from 'viem'
 import { SendTransactionSignature } from '../Flow'
+import { postPaymentEvent } from '../PaymentEvent'
 
 interface Options {
     library: MultichainLibrary
@@ -16,11 +17,17 @@ interface Options {
     relayQuote: Execute
 }
 
-export function createMockedRelayStep(_options: Options) {
+export function createMockedRelayStep(options: Options) {
     return {
         name: 'relay',
         action: async (_context: Map<string, unknown>) => {
             await System.sleepMillis(500)
+            postPaymentEvent({
+                phase: 'sent',
+                chainId: options.sourceChain,
+                temporaryAddress: options.temporaryAddress,
+                txHash: `0x${'0'.repeat(64)}`
+            })
         }
     }
 }

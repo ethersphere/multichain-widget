@@ -4,6 +4,7 @@ import { FixedPointNumber } from 'cafe-utility'
 import { Dispatch, SetStateAction } from 'react'
 import { WalletClient } from 'viem'
 import { SendTransactionSignature } from '../Flow'
+import { postPaymentEvent } from '../PaymentEvent'
 import { selectExplorerForChainId } from '../Utility'
 
 interface Options {
@@ -25,7 +26,19 @@ export function createRelayStep(options: Options) {
         name: 'relay',
         precondition: async () => {
             const dai = await options.library.getGnosisNativeBalance(options.temporaryAddress)
-            return dai.value < options.totalDaiValue.value
+            const funded = dai.value >= options.totalDaiValue.value
+            if (funded) {
+                // Implicit resume: no payment is made, but the funds are already on the
+                // temporary wallet and the Gnosis-side steps are about to spend them, so
+                // the host must treat this run as paid.
+                postPaymentEvent({
+                    phase: 'delivered',
+                    chainId: options.library.constants.gnosisChainId,
+                    temporaryAddress: options.temporaryAddress,
+                    resumed: true
+                })
+            }
+            return !funded
         },
         action: async (context: Map<string, unknown>) => {
             const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
@@ -39,7 +52,14 @@ export function createRelayStep(options: Options) {
                     value: options.sourceTokenAmount.value
                 })
                 options.setMetadata(previous => ({ ...previous, relay: `https://gnosisscan.io/tx/${tx}` }))
+                postPaymentEvent({
+                    phase: 'sent',
+                    chainId: options.sourceChain,
+                    temporaryAddress: options.temporaryAddress,
+                    txHash: tx
+                })
             } else {
+                let paymentSent = false
                 await options.relayClient.actions.execute({
                     quote: options.relayQuote,
                     wallet: options.walletClient,
@@ -52,6 +72,15 @@ export function createRelayStep(options: Options) {
                                     ...previous,
                                     relay: `${selectExplorerForChainId(txHash.chainId)}/tx/${txHash.txHash}`
                                 }))
+                                if (!paymentSent) {
+                                    paymentSent = true
+                                    postPaymentEvent({
+                                        phase: 'sent',
+                                        chainId: txHash.chainId,
+                                        temporaryAddress: options.temporaryAddress,
+                                        txHash: txHash.txHash
+                                    })
+                                }
                             }
                         }
                     }

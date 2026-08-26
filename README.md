@@ -92,70 +92,70 @@ We use SushiSwap contracts and its API to swap xDAI to xBZZ.
 
 #### Always Present
 
--   `data-test-id="intent"`
--   `data-test-id="target-address-input"`
--   `data-test-id="xdai-input"`
--   `data-test-id="xbzz-input"`
--   `data-test-id="continue"`
--   `data-test-id="export-keys"`
+- `data-test-id="intent"`
+- `data-test-id="target-address-input"`
+- `data-test-id="xdai-input"`
+- `data-test-id="xbzz-input"`
+- `data-test-id="continue"`
+- `data-test-id="export-keys"`
 
 #### Conditional
 
--   `data-test-id="error-invalid-address"`
--   `data-test-id="error-bad-address-checksum"`
--   `data-test-id="error-not-enough-bzz"`
+- `data-test-id="error-invalid-address"`
+- `data-test-id="error-bad-address-checksum"`
+- `data-test-id="error-not-enough-bzz"`
 
 ### Screen 2
 
 #### Always Present
 
--   `data-test-id="go-back"`
--   `data-test-id="readonly-source-address"`
--   `data-test-id="readonly-target-address"`
--   `data-test-id="source-chain-input"`
--   `data-test-id="source-chain-input__1"` the number represents the network id, in this case 1 for Ethereum Mainnet
--   `data-test-id="source-token-input"`
--   `data-test-id="source-token-input__0xdac17f958d2ee523a2206206994597c13d831ec7"` the address represents the token, in this case USDT
--   `data-test-id="swap-summary"` (e.g. "You will swap 0.0814 (~$0.081) USDT from Ethereum to fund:")
--   `data-test-id="xdai-display__left"` (e.g. "0.01 xDAI")
--   `data-test-id="xdai-display__right"` (e.g. "$0.01")
--   `data-test-id="xbzz-display__left"` (e.g. "0.500 xBZZ")
--   `data-test-id="xbzz-display__right"` (e.g. "$0.06")
--   `data-test-id="quote-status"`
--   `data-test-id="quote-status__description"` (e.g. "Quote available")
--   `data-test-id="fund"`
+- `data-test-id="go-back"`
+- `data-test-id="readonly-source-address"`
+- `data-test-id="readonly-target-address"`
+- `data-test-id="source-chain-input"`
+- `data-test-id="source-chain-input__1"` the number represents the network id, in this case 1 for Ethereum Mainnet
+- `data-test-id="source-token-input"`
+- `data-test-id="source-token-input__0xdac17f958d2ee523a2206206994597c13d831ec7"` the address represents the token, in this case USDT
+- `data-test-id="swap-summary"` (e.g. "You will swap 0.0814 (~$0.081) USDT from Ethereum to fund:")
+- `data-test-id="xdai-display__left"` (e.g. "0.01 xDAI")
+- `data-test-id="xdai-display__right"` (e.g. "$0.01")
+- `data-test-id="xbzz-display__left"` (e.g. "0.500 xBZZ")
+- `data-test-id="xbzz-display__right"` (e.g. "$0.06")
+- `data-test-id="quote-status"`
+- `data-test-id="quote-status__description"` (e.g. "Quote available")
+- `data-test-id="fund"`
 
 #### Conditional
 
--   `data-test-id="quote-status__completed"`
--   `data-test-id="quote-status__pending"`
--   `data-test-id="quote-status__failed"`
+- `data-test-id="quote-status__completed"`
+- `data-test-id="quote-status__pending"`
+- `data-test-id="quote-status__failed"`
 
 ### Screen 3
 
 #### Always Present
 
--   `data-test-id="go-back"` disabled
--   `data-test-id="readonly-source-address"`
--   `data-test-id="readonly-target-address"`
--   `data-test-id="status-step-1"`
--   ...
--   `data-test-id="status-step-6"`
--   `data-test-id="fund"` disabled
+- `data-test-id="go-back"` disabled
+- `data-test-id="readonly-source-address"`
+- `data-test-id="readonly-target-address"`
+- `data-test-id="status-step-1"`
+- ...
+- `data-test-id="status-step-6"`
+- `data-test-id="fund"` disabled
 
 #### Conditional
 
--   `data-test-id="status-step-1__pending"`
--   `data-test-id="status-step-1__skipped"`
--   `data-test-id="status-step-1__completed"`
--   `data-test-id="status-step-1__in-progress"`
--   `data-test-id="status-step-1__failed"`
--   ...
--   `data-test-id="status-step-6__pending"`
--   `data-test-id="status-step-6__skipped"`
--   `data-test-id="status-step-6__completed"`
--   `data-test-id="status-step-6__in-progress"`
--   `data-test-id="status-step-6__failed"`
+- `data-test-id="status-step-1__pending"`
+- `data-test-id="status-step-1__skipped"`
+- `data-test-id="status-step-1__completed"`
+- `data-test-id="status-step-1__in-progress"`
+- `data-test-id="status-step-1__failed"`
+- ...
+- `data-test-id="status-step-6__pending"`
+- `data-test-id="status-step-6__skipped"`
+- `data-test-id="status-step-6__completed"`
+- `data-test-id="status-step-6__in-progress"`
+- `data-test-id="status-step-6__failed"`
 
 ## Theme
 
@@ -169,10 +169,10 @@ A backup of every generated private key is stored in `localStorage` with a times
 
 Hooks can be set by passing `hooks` prop to the `MultichainWidget` component. Currently supported hooks are:
 
--   `beforeTransactionStart`
--   `onFatalError`
--   `onCompletion`
--   `onUserAbort`
+- `beforeTransactionStart`
+- `onFatalError`
+- `onCompletion`
+- `onUserAbort`
 
 # Postage batch creation
 
@@ -189,9 +189,10 @@ https://fund.ethswarm.org/?mode=batch&destination=0x45a1502382541Cd610CC9068e887
 
 ## iframe messages
 
--   `{ event: 'error', error }`
--   `{ event: 'finish' }`
--   `{ event: 'batch', batchId: 0x${string}, depth: number, amount: numberString, blockNumber: 0x${string} }`
+- `{ event: 'error', error }`
+- `{ event: 'finish' }`
+- `{ event: 'batch', batchId: 0x${string}, depth: number, amount: numberString, blockNumber: 0x${string} }`
+- `{ event: 'payment', phase: 'sent' | 'delivered', chainId: number, resumed: boolean, txHash?: 0x${string}, temporaryAddress?: 0x${string} }`
 
 Example:
 
@@ -202,6 +203,28 @@ Example:
     "depth": 21,
     "amount": "10453363201",
     "blockNumber": "0x2a828b8"
+}
+```
+
+### Payment events
+
+The `payment` event tells the host that money is in flight, so it can avoid closing the
+widget after the point of no return, and can find the funds later if the flow is interrupted.
+
+- `phase: 'sent'` — the payment transaction succeeded (`txHash` is on `chainId`, the source chain). Point of no return: the funds will be delivered to `temporaryAddress` whether or not the widget is still open.
+- `phase: 'delivered'` — the xDAI arrived on `temporaryAddress`; the remaining steps run on Gnosis (`chainId` is 100, no `txHash`).
+- `resumed: true` — the temporary wallet was already funded, so the deposit was skipped and no new payment was made. Emitted with `phase:  'delivered'`; the funds are just as much in flight as after a fresh payment.
+- `temporaryAddress` is present whenever the payment routes through the temporary wallet, which is where funds can get stranded if the widget is interrupted. It is absent when Relay delivers to the destination address directly (`funding` mode from a non-Gnosis chain): that path has no temporary wallet and no further steps, so it emits `sent` only — its completion is the `finish` event.
+
+Example:
+
+```json
+{
+    "event": "payment",
+    "phase": "delivered",
+    "chainId": 100,
+    "temporaryAddress": "0x45a1502382541Cd610CC9068e88727426b696293",
+    "resumed": false
 }
 ```
 

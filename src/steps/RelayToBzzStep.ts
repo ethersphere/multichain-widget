@@ -2,6 +2,7 @@ import { Execute, ProgressData, RelayClient } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Dispatch, SetStateAction } from 'react'
 import { WalletClient } from 'viem'
+import { postPaymentEvent } from '../PaymentEvent'
 import { selectExplorerForChainId } from '../Utility'
 
 interface Options {
@@ -28,6 +29,7 @@ export function createRelayToBzzStep(options: Options) {
                 throw new Error('Relay quote does not include a gas topup amount')
             }
 
+            let paymentSent = false
             await options.relayClient.actions.execute({
                 quote: options.relayQuote,
                 wallet: options.walletClient,
@@ -39,6 +41,14 @@ export function createRelayToBzzStep(options: Options) {
                                 ...previous,
                                 relay: `${selectExplorerForChainId(txHash.chainId)}/tx/${txHash.txHash}`
                             }))
+                            if (!paymentSent) {
+                                paymentSent = true
+                                postPaymentEvent({
+                                    phase: 'sent',
+                                    chainId: txHash.chainId,
+                                    txHash: txHash.txHash
+                                })
+                            }
                         }
                     }
                 }

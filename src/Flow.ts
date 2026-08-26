@@ -119,7 +119,7 @@ export function createGnosisFundingFlow(options: FundingFlowOptions) {
 
     if (options.mocked) {
         solver.addStep(createMockedDepositStep(options))
-        solver.addStep(createMockedDepositSyncStep())
+        solver.addStep(createMockedDepositSyncStep(options))
         solver.addStep(createMockedSushiStep(options))
         solver.addStep(createMockedSushiSyncStep(options))
         solver.addStep(createMockedTransferStep(options))
