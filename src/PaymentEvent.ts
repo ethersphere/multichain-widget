@@ -1,3 +1,5 @@
+import { postToHost } from './HostMessage'
+
 export type PaymentPhase = 'sent' | 'delivered'
 
 interface Options {
@@ -25,5 +27,5 @@ export function postPaymentEvent(options: Options) {
         ...(options.temporaryAddress ? { temporaryAddress: options.temporaryAddress } : {})
     }
     console.log('Payment event', message)
-    window.parent.postMessage(message, '*')
+    postToHost(message)
 }

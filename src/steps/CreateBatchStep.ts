@@ -1,6 +1,7 @@
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Strings, Types } from 'cafe-utility'
 import { Dispatch, SetStateAction } from 'react'
+import { postToHost } from '../HostMessage'
 
 interface Options {
     library: MultichainLibrary
@@ -39,7 +40,7 @@ export function createCreateBatchStep(options: Options) {
                 blockNumber: transaction.blockNumber
             }
             console.log('Postage batch created', message)
-            window.parent.postMessage(message, '*')
+            postToHost(message)
             context.set('batchId', result.batchId)
         }
     }

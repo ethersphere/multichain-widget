@@ -11,6 +11,7 @@ import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
 import { config, configuredRelayChains } from './Config'
 import { createCreateBatchFlow, createGnosisFundingFlow, createOtherChainFundingFlow } from './Flow'
+import { postToHost } from './HostMessage'
 import { AlertIcon } from './icons/AlertIcon'
 import { createLock } from './Lock'
 import { MultichainHooks } from './MultichainHooks'
@@ -299,11 +300,11 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             onError: async error => {
                 console.error('Swap flow error:', error)
                 await hooks.onFatalError(error)
-                window.parent.postMessage({ event: 'error', error }, '*')
+                postToHost({ event: 'error', error })
             },
             onFinish: async () => {
                 await hooks.onCompletion()
-                window.parent.postMessage({ event: 'finish' }, '*')
+                postToHost({ event: 'finish' })
             }
         })
 
@@ -323,7 +324,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             )
             console.error('Swap flow error:', error)
             await hooks.onFatalError(error)
-            window.parent.postMessage({ event: 'error', error }, '*')
+            postToHost({ event: 'error', error })
         }
     }
 

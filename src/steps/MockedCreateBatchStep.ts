@@ -1,5 +1,6 @@
 import { MultichainLibrary } from '@upcoming/multichain-library'
 import { Strings, System } from 'cafe-utility'
+import { postToHost } from '../HostMessage'
 
 interface Options {
     library: MultichainLibrary
@@ -23,7 +24,7 @@ export function createMockedCreateBatchStep(options: Options) {
                 blockNumber: '0x2aa1944'
             }
             console.log('Postage batch created', message)
-            window.parent.postMessage(message, '*')
+            postToHost(message)
             context.set('batchId', batchId)
         }
     }

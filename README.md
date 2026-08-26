@@ -189,6 +189,8 @@ https://fund.ethswarm.org/?mode=batch&destination=0x45a1502382541Cd610CC9068e887
 
 ## iframe messages
 
+Messages are posted to the window that hosts the widget: `window.parent` when the widget is embedded in an iframe, or `window.opener` when it is opened as a popup with `window.open` (there `window.parent` is the popup itself). Hosts should verify `event.source` and `event.origin` before trusting a message.
+
 - `{ event: 'error', error }`
 - `{ event: 'finish' }`
 - `{ event: 'batch', batchId: 0x${string}, depth: number, amount: numberString, blockNumber: 0x${string} }`
