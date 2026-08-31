@@ -70,15 +70,30 @@ Can be specified in the query params with the `bzz` key.
 
 # Flow
 
-1. Cross-swap a token to xDAI using Relay, goes to a temporary wallet.
-2. Swap xDAI to xBZZ using SushiSwap, goes to the user's wallet.
+The steps depend on the `mode` and on whether the source chain is Gnosis.
+
+### `funding` mode, non-Gnosis source chain
+
+1. Cross-swap the token to xBZZ using Relay, with a gas top-up, both going straight to the user's wallet.
+
+### `batch` mode, non-Gnosis source chain
+
+1. Cross-swap the token to xBZZ using Relay, with a gas top-up, both going to a temporary wallet.
+2. Approve the xBZZ spending and create the postage batch, owned by the user's wallet.
 3. Transfer any remaining xDAI to the user's wallet.
+
+### Gnosis source chain
+
+1. Deposit xDAI to a temporary wallet.
+2. Swap xDAI to xBZZ using SushiSwap, going to the user's wallet in `funding` mode and to the temporary wallet in `batch` mode.
+3. In `batch` mode, approve the xBZZ spending and create the postage batch, owned by the user's wallet.
+4. Transfer any remaining xDAI to the user's wallet.
 
 # Dependencies
 
 ### Relay
 
-We use the Relay API to cross-swap to xDAI.
+We use the Relay API to cross-swap to xBZZ, together with a gas top-up in xDAI.
 
 ### SushiSwap
 

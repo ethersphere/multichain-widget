@@ -8,9 +8,15 @@ import { selectExplorerForChainId } from '../Utility'
 interface Options {
     library: MultichainLibrary
     targetAddress: `0x${string}`
+    temporaryAddress: `0x${string}`
+    relayQuote: Execute
     relayClient: RelayClient
     walletClient: WalletClient
-    relayQuote: Execute
+    // Set when `targetAddress` is the temporary wallet, which is the case in `batch`
+    // mode: the temporary wallet is the one that approves the xBZZ spending and pays
+    // for the batch. In `funding` mode Relay delivers straight to the destination, so
+    // there is no temporary wallet in the route.
+    routesThroughTemporaryWallet?: boolean
     setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
@@ -46,7 +52,10 @@ export function createRelayToBzzStep(options: Options) {
                                 postPaymentEvent({
                                     phase: 'sent',
                                     chainId: txHash.chainId,
-                                    txHash: txHash.txHash
+                                    txHash: txHash.txHash,
+                                    temporaryAddress: options.routesThroughTemporaryWallet
+                                        ? options.temporaryAddress
+                                        : undefined
                                 })
                             }
                         }
