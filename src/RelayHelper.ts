@@ -1,10 +1,9 @@
-import { GetQuoteParameters, RelayClient, Execute } from '@relayprotocol/relay-sdk'
+import { Execute, GetQuoteParameters } from '@relayprotocol/relay-sdk'
 import { Objects, System } from 'cafe-utility'
 
 const MAX_RETRIES = 10
 
 export async function getRelayQuoteWithRetries(
-    relayClient: RelayClient,
     quoteConfiguration: GetQuoteParameters & { topupGas?: boolean; topupGasAmount?: string }
 ) {
     // translate SDK param names → raw API param names, so we won't get any error with params

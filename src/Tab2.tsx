@@ -10,7 +10,12 @@ import { FundingProgressTracker } from './components/FundingProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
 import { config, configuredRelayChains } from './Config'
-import { createCreateBatchFlow, createGnosisFundingFlow, createOtherChainFundingFlow } from './Flow'
+import {
+    createGnosisCreateBatchFlow,
+    createGnosisFundingFlow,
+    createOtherChainCreateBatchFlow,
+    createOtherChainFundingFlow
+} from './Flow'
 import { postToHost } from './HostMessage'
 import { AlertIcon } from './icons/AlertIcon'
 import { createLock } from './Lock'
@@ -80,6 +85,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
         currencyIn?.amount && currencyIn.currency?.decimals
             ? new FixedPointNumber(currencyIn?.amount, currencyIn?.currency?.decimals)
             : null
+    const isGnosisSource = sourceChain === library.constants.gnosisChainId
     const sourceChainDisplayName = chains.find(x => x.id === sourceChain)?.displayName || 'N/A'
     const sourceTokenObject = (tokenList || []).find(x => x.address === sourceToken)
     const sourceTokenDisplayName = sourceTokenObject ? sourceTokenObject.symbol : 'N/A'
@@ -157,9 +163,11 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                       topupGas: false
                   }
                 : {
-                      // non-Gnosis: deliver BZZ + gas top-up straight to the bee node address, two new parameters: topupGas and topupGasAmount
+                      // non-Gnosis: deliver BZZ + gas top-up in one go, two new parameters: topupGas and topupGasAmount.
+                      // In `funding` mode that goes straight to the bee node address; in `batch` mode it has to land on
+                      // the temporary wallet, which is the wallet that approves the xBZZ and pays for the batch.
                       user: swapData.sourceAddress,
-                      recipient: swapData.targetAddress,
+                      recipient: mode === 'batch' ? swapData.temporaryAddress : swapData.targetAddress,
                       chainId: sourceChain,
                       toChainId: library.constants.gnosisChainId,
                       currency: sourceToken,
@@ -167,18 +175,28 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                       tradeType: 'EXACT_OUTPUT' as const,
                       amount: neededBzzAmount.toString(),
                       topupGas: true,
-                      topupGasAmount: Math.round(swapData.nativeAmount * 1_000_000).toString() // 6 Decimal format
+                      // The dust is what the temporary wallet keeps behind in `batch` mode, so
+                      // including it keeps the top-up equal to the xDAI figure in the summary.
+                      topupGasAmount: Math.round(neededDaiUsdValue * 1_000_000).toString() // 6 Decimal format
                   }
             const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                 setRelayQuote(null)
                 setLoadingRelayQuote(true)
-                const quote = await getRelayQuoteWithRetries(relayClient, quoteConfiguration)
+                const quote = await getRelayQuoteWithRetries(quoteConfiguration)
                 return quote
             })
             setRelayQuote(quote)
             setLoadingRelayQuote(false)
         }, Dates.seconds(30))
-    }, [selectedTokenBalance, sourceChain, sourceToken, selectedTokenUsdPrice, setRelayQuote, setLoadingRelayQuote])
+    }, [
+        selectedTokenBalance,
+        sourceChain,
+        sourceToken,
+        selectedTokenUsdPrice,
+        mode,
+        setRelayQuote,
+        setLoadingRelayQuote
+    ])
 
     function onBack() {
         setTab(1)
@@ -239,50 +257,38 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
 
         const mocked = getQueryParam('mocked') === 'true'
 
+        const commonOptions = {
+            library,
+            relayQuote,
+            sourceChain,
+            sourceToken,
+            sourceTokenAmount: selectedTokenAmountNeeded,
+            sendTransactionAsync,
+            targetAddress: Types.asHexString(swapData.targetAddress),
+            temporaryAddress: Types.asHexString(swapData.temporaryAddress),
+            temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
+            bzzUsdValue: neededBzzUsdValue,
+            totalDaiValue: xDAI.fromFloat(totalNeededUsdValue),
+            relayClient,
+            walletClient: walletClient.data,
+            mocked,
+            setMetadata
+        }
+
         if (mode === 'funding') {
-            const fundingFlow =
-                sourceChain === library.constants.gnosisChainId ? createGnosisFundingFlow : createOtherChainFundingFlow
-            solver = fundingFlow({
-                library,
-                relayQuote,
-                sourceChain,
-                sourceToken,
-                sourceTokenAmount: selectedTokenAmountNeeded,
-                sendTransactionAsync,
-                targetAddress: Types.asHexString(swapData.targetAddress),
-                temporaryAddress: Types.asHexString(swapData.temporaryAddress),
-                temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
-                bzzUsdValue: neededBzzUsdValue,
-                totalDaiValue: xDAI.fromFloat(totalNeededUsdValue),
-                relayClient,
-                walletClient: walletClient.data,
-                mocked,
-                setMetadata
-            })
+            const fundingFlow = isGnosisSource ? createGnosisFundingFlow : createOtherChainFundingFlow
+            solver = fundingFlow(commonOptions)
         } else if (mode === 'batch') {
             if (!swapData.batch) {
                 console.error('Batch parameters not set')
                 alert('Batch parameters not set')
                 return
             }
-            solver = createCreateBatchFlow({
-                library,
-                relayQuote,
-                sourceChain,
-                sourceToken,
-                sourceTokenAmount: selectedTokenAmountNeeded,
-                sendTransactionAsync,
-                targetAddress: Types.asHexString(swapData.targetAddress),
-                temporaryAddress: Types.asHexString(swapData.temporaryAddress),
-                temporaryPrivateKey: Types.asHexString(swapData.sessionKey),
-                bzzUsdValue: neededBzzUsdValue,
-                totalDaiValue: xDAI.fromFloat(totalNeededUsdValue),
-                relayClient,
-                walletClient: walletClient.data,
+            const createBatchFlow = isGnosisSource ? createGnosisCreateBatchFlow : createOtherChainCreateBatchFlow
+            solver = createBatchFlow({
+                ...commonOptions,
                 batchAmount: swapData.batch.amount,
-                batchDepth: swapData.batch.depth,
-                mocked,
-                setMetadata
+                batchDepth: swapData.batch.depth
             })
         } else {
             console.error('Invalid mode, no solver available')
@@ -373,10 +379,15 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                             theme={theme}
                             progress={stepStates}
                             metadata={metadata}
-                            isOtherChain={sourceChain !== library.constants.gnosisChainId}
+                            isOtherChain={!isGnosisSource}
                         />
                     ) : mode === 'batch' ? (
-                        <CreateBatchProgressTracker theme={theme} progress={stepStates} metadata={metadata} />
+                        <CreateBatchProgressTracker
+                            theme={theme}
+                            progress={stepStates}
+                            metadata={metadata}
+                            isOtherChain={!isGnosisSource}
+                        />
                     ) : null}
                 </>
             ) : null}
@@ -436,6 +447,9 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                             value={sourceToken}
                             options={(tokenList || [])
                                 .filter(x => x.address)
+                                // On Gnosis the deposit step sends native xDAI straight to the temporary
+                                // wallet, so no other token can be paid with there.
+                                .filter(x => !isGnosisSource || x.address === library.constants.nullAddress)
                                 .map(x => ({
                                     value: x.address!,
                                     label: `${x.symbol} (${x.name})`,

@@ -70,15 +70,30 @@ Can be specified in the query params with the `bzz` key.
 
 # Flow
 
-1. Cross-swap a token to xDAI using Relay, goes to a temporary wallet.
-2. Swap xDAI to xBZZ using SushiSwap, goes to the user's wallet.
+The steps depend on the `mode` and on whether the source chain is Gnosis.
+
+### `funding` mode, non-Gnosis source chain
+
+1. Cross-swap the token to xBZZ using Relay, with a gas top-up, both going straight to the user's wallet.
+
+### `batch` mode, non-Gnosis source chain
+
+1. Cross-swap the token to xBZZ using Relay, with a gas top-up, both going to a temporary wallet.
+2. Approve the xBZZ spending and create the postage batch, owned by the user's wallet.
 3. Transfer any remaining xDAI to the user's wallet.
+
+### Gnosis source chain
+
+1. Deposit xDAI to a temporary wallet.
+2. Swap xDAI to xBZZ using SushiSwap, going to the user's wallet in `funding` mode and to the temporary wallet in `batch` mode.
+3. In `batch` mode, approve the xBZZ spending and create the postage batch, owned by the user's wallet.
+4. Transfer any remaining xDAI to the user's wallet.
 
 # Dependencies
 
 ### Relay
 
-We use the Relay API to cross-swap to xDAI.
+We use the Relay API to cross-swap to xBZZ, together with a gas top-up in xDAI.
 
 ### SushiSwap
 
@@ -214,8 +229,8 @@ The `payment` event tells the host that money is in flight, so it can avoid clos
 widget after the point of no return, and can find the funds later if the flow is interrupted.
 
 - `phase: 'sent'` — the payment transaction succeeded (`txHash` is on `chainId`, the source chain). Point of no return: the funds will be delivered to `temporaryAddress` whether or not the widget is still open.
-- `phase: 'delivered'` — the xDAI arrived on `temporaryAddress`; the remaining steps run on Gnosis (`chainId` is 100, no `txHash`).
-- `resumed: true` — the temporary wallet was already funded, so the deposit was skipped and no new payment was made. Emitted with `phase:  'delivered'`; the funds are just as much in flight as after a fresh payment.
+- `phase: 'delivered'` — the funds arrived on `temporaryAddress` (xDAI from a Gnosis source chain, xBZZ plus a gas top-up from any other one); the remaining steps run on Gnosis (`chainId` is 100, no `txHash`).
+- `resumed: true` — the temporary wallet was already funded, so the payment step was skipped and no new payment was made. Emitted with `phase:  'delivered'`; the funds are just as much in flight as after a fresh payment.
 - `temporaryAddress` is present whenever the payment routes through the temporary wallet, which is where funds can get stranded if the widget is interrupted. It is absent when Relay delivers to the destination address directly (`funding` mode from a non-Gnosis chain): that path has no temporary wallet and no further steps, so it emits `sent` only — its completion is the `finish` event.
 
 Example:
