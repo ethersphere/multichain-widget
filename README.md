@@ -229,8 +229,8 @@ The `payment` event tells the host that money is in flight, so it can avoid clos
 widget after the point of no return, and can find the funds later if the flow is interrupted.
 
 - `phase: 'sent'` — the payment transaction succeeded (`txHash` is on `chainId`, the source chain). Point of no return: the funds will be delivered to `temporaryAddress` whether or not the widget is still open.
-- `phase: 'delivered'` — the xDAI arrived on `temporaryAddress`; the remaining steps run on Gnosis (`chainId` is 100, no `txHash`).
-- `resumed: true` — the temporary wallet was already funded, so the deposit was skipped and no new payment was made. Emitted with `phase:  'delivered'`; the funds are just as much in flight as after a fresh payment.
+- `phase: 'delivered'` — the funds arrived on `temporaryAddress` (xDAI from a Gnosis source chain, xBZZ plus a gas top-up from any other one); the remaining steps run on Gnosis (`chainId` is 100, no `txHash`).
+- `resumed: true` — the temporary wallet was already funded, so the payment step was skipped and no new payment was made. Emitted with `phase:  'delivered'`; the funds are just as much in flight as after a fresh payment.
 - `temporaryAddress` is present whenever the payment routes through the temporary wallet, which is where funds can get stranded if the widget is interrupted. It is absent when Relay delivers to the destination address directly (`funding` mode from a non-Gnosis chain): that path has no temporary wallet and no further steps, so it emits `sent` only — its completion is the `finish` event.
 
 Example:

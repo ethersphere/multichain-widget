@@ -175,7 +175,9 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                       tradeType: 'EXACT_OUTPUT' as const,
                       amount: neededBzzAmount.toString(),
                       topupGas: true,
-                      topupGasAmount: Math.round(swapData.nativeAmount * 1_000_000).toString() // 6 Decimal format
+                      // The dust is what the temporary wallet keeps behind in `batch` mode, so
+                      // including it keeps the top-up equal to the xDAI figure in the summary.
+                      topupGasAmount: Math.round(neededDaiUsdValue * 1_000_000).toString() // 6 Decimal format
                   }
             const quote = await Cache.get(JSON.stringify(quoteConfiguration), Dates.minutes(1), async () => {
                 setRelayQuote(null)

@@ -20,12 +20,59 @@ interface Options {
     setMetadata: Dispatch<SetStateAction<Record<string, string>>>
 }
 
+function readExpectedBzzAmount(relayQuote: Execute): bigint | null {
+    // `minimumAmount` is the floor Relay guarantees to deliver, so a wallet funded by an
+    // earlier run of this very quote is guaranteed to hold at least that much.
+    const currencyOut = relayQuote.details?.currencyOut
+    const amount = currencyOut?.minimumAmount || currencyOut?.amount
+    try {
+        return amount ? BigInt(amount) : null
+    } catch {
+        return null
+    }
+}
+
 export function createRelayToBzzStep(options: Options) {
     return {
         name: 'relay',
+        precondition: async () => {
+            // Only the `batch` route lands on the temporary wallet, and only there can the
+            // step be skipped: in `funding` mode the destination is the user's own wallet,
+            // which may hold xBZZ for reasons that have nothing to do with this payment.
+            if (!options.routesThroughTemporaryWallet) {
+                return true
+            }
+            const expectedBzz = readExpectedBzzAmount(options.relayQuote)
+            if (expectedBzz === null) {
+                return true
+            }
+            const bzz = await options.library.getGnosisBzzBalance(options.temporaryAddress)
+            const dai = await options.library.getGnosisNativeBalance(options.temporaryAddress)
+            // The gas top-up has to be there as well, otherwise the steps that spend it
+            // would keep failing with no way left to pay for the gas.
+            const funded = bzz.value >= expectedBzz && dai.compare(options.library.constants.daiDustAmount) === 1
+            if (funded) {
+                // Implicit resume: no payment is made, but the funds are already on the
+                // temporary wallet and the Gnosis-side steps are about to spend them, so
+                // the host must treat this run as paid.
+                postPaymentEvent({
+                    phase: 'delivered',
+                    chainId: options.library.constants.gnosisChainId,
+                    temporaryAddress: options.temporaryAddress,
+                    resumed: true
+                })
+            }
+            return !funded
+        },
         action: async (context: Map<string, unknown>) => {
             const bzzBefore = await options.library.getGnosisBzzBalance(options.targetAddress)
             context.set('bzzBefore', bzzBefore)
+            if (options.routesThroughTemporaryWallet) {
+                // The gas top-up lands on the same recipient, and the steps after the sync
+                // one spend it, so the sync step has to be able to wait for it too.
+                const daiBefore = await options.library.getGnosisNativeBalance(options.temporaryAddress)
+                context.set('topupDaiBefore', daiBefore)
+            }
 
             // Sometimes there is a time delay with the fetched quote and config quote on Relay, if it's not the same,
             // we need to throw error, otherwise gas pop-up will not happen and have to wait for a new quote to be fetched
