@@ -1,5 +1,5 @@
-import { useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
-import { createClient, Execute } from '@relayprotocol/relay-sdk'
+import { queryRelayChains, useRelayChains, useTokenList } from '@relayprotocol/relay-kit-hooks'
+import { createClient, Execute, MAINNET_RELAY_API } from '@relayprotocol/relay-sdk'
 import { MultichainLibrary, xBZZ, xDAI } from '@upcoming/multichain-library'
 import { Cache, Dates, FixedPointNumber, Numbers, Objects, Solver, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
@@ -9,7 +9,7 @@ import { CreateBatchProgressTracker } from './components/CreateBatchProgressTrac
 import { FundingProgressTracker } from './components/FundingProgressTracker'
 import { QuoteIndicator } from './components/QuoteIndicator'
 import { TokenDisplay } from './components/TokenDisplay'
-import { config, configuredRelayChains } from './Config'
+import { config, configuredRelayChains, relayApiHeaders, relayApiKey } from './Config'
 import {
     createGnosisCreateBatchFlow,
     createGnosisFundingFlow,
@@ -28,7 +28,7 @@ import { LabelSpacing } from './primitives/LabelSpacing'
 import { Span } from './primitives/Span'
 import { TextInput } from './primitives/TextInput'
 import { Typography } from './primitives/Typography'
-import { getRelayQuoteWithRetries } from './RelayHelper'
+import { getRelayQuoteWithRetries, getRelayTokenList } from './RelayHelper'
 import { SwapData } from './SwapData'
 import { getQueryParam, shortenHash } from './Utility'
 
@@ -70,13 +70,20 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     const [metadata, setMetadata] = useState<Record<string, string>>({})
 
     // relay and wagmi hooks
-    const relayClient = createClient({ chains: configuredRelayChains })
+    const relayClient = createClient({ chains: configuredRelayChains, apiKey: relayApiKey })
     const walletClient = useWalletClient()
-    const { chains: relayChains } = useRelayChains()
+    // the relay kit hooks do not send the API key, so their requests are overridden below
+    const { chains: relayChains } = useRelayChains(MAINNET_RELAY_API, undefined, {
+        queryFn: () => queryRelayChains(MAINNET_RELAY_API, undefined, relayApiHeaders)
+    })
     const configuredChains = useChains()
     const chains =
         relayChains && configuredChains ? relayChains.filter(x => configuredChains.some(y => x.id === y.id)) : []
-    const { data: tokenList } = useTokenList('https://api.relay.link', { chainIds: [sourceChain] })
+    const { data: tokenList } = useTokenList(
+        MAINNET_RELAY_API,
+        { chainIds: [sourceChain] },
+        { queryFn: () => getRelayTokenList(sourceChain) }
+    )
     const { switchChainAsync } = useSwitchChain()
 
     // computed

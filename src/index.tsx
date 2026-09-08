@@ -6,7 +6,7 @@ import { MultichainLibrary, MultichainLibrarySettings } from '@upcoming/multicha
 import { Objects } from 'cafe-utility'
 import { mainnet } from 'viem/chains'
 import { WagmiProvider } from 'wagmi'
-import { config } from './Config'
+import { config, relayApiKey } from './Config'
 import { Intent } from './Intent'
 import { getDefaultHooks, MultichainHooks } from './MultichainHooks'
 import { MultichainMode } from './MultichainMode'
@@ -29,6 +29,7 @@ interface Props {
 
 createClient({
     baseApiUrl: MAINNET_RELAY_API,
+    apiKey: relayApiKey,
     chains: [convertViemChainToRelayChain(mainnet)]
 })
 

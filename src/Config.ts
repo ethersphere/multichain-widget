@@ -19,6 +19,12 @@ export const config: Config = getDefaultConfig({
     }
 })
 
+// Relay requires an API key on its public API endpoints. As this is a browser widget, the key is
+// necessarily shipped to the client; Relay issues these keys for public, rate-limited use.
+export const relayApiKey = '8bb9afc9-ee43-4665-95d5-d9a15677d2fe'
+
+export const relayApiHeaders: Record<string, string> = { 'x-api-key': relayApiKey }
+
 export const configuredRelayChains = [mainnet, polygon, optimism, arbitrum, base, gnosis].map(
     convertViemChainToRelayChain
 )

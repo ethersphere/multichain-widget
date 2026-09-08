@@ -95,6 +95,8 @@ The steps depend on the `mode` and on whether the source chain is Gnosis.
 
 We use the Relay API to cross-swap to xBZZ, together with a gas top-up in xDAI.
 
+The Relay API requires an API key, which is sent as the `x-api-key` header. It is defined as `relayApiKey` in `src/Config.ts` and is passed to the Relay SDK client, to the raw quote request, and to the Relay kit hooks.
+
 ### SushiSwap
 
 We use SushiSwap contracts and its API to swap xDAI to xBZZ.

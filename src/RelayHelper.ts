@@ -1,5 +1,7 @@
+import { CurrencyList } from '@relayprotocol/relay-kit-hooks'
 import { Execute, GetQuoteParameters } from '@relayprotocol/relay-sdk'
 import { Objects, System } from 'cafe-utility'
+import { relayApiHeaders } from './Config'
 
 const MAX_RETRIES = 10
 
@@ -28,7 +30,8 @@ export async function getRelayQuoteWithRetries(
             const response = await fetch('https://api.relay.link/quote/v2', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    ...relayApiHeaders
                 },
                 body: JSON.stringify(body),
                 signal: AbortSignal.timeout(30_3000) // 30 seconds timeout
@@ -48,4 +51,24 @@ export async function getRelayQuoteWithRetries(
         }
     }
     return null
+}
+
+export async function getRelayTokenList(chainId: number): Promise<CurrencyList> {
+    // the useTokenList hook does not forward headers to the API, so the request is made here,
+    // in order to be able to send the API key
+
+    const response = await fetch('https://api.relay.link/currencies/v2', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            ...relayApiHeaders
+        },
+        body: JSON.stringify({ chainIds: [chainId] }),
+        signal: AbortSignal.timeout(30_000)
+    })
+    if (!response.ok) {
+        const errBody = await response.json().catch(() => ({}))
+        throw new Error(errBody?.message || `Token list request failed: ${response.status} ${response.statusText}`)
+    }
+    return (await response.json()) as CurrencyList
 }
