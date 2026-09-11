@@ -197,6 +197,10 @@ Hooks can be set by passing `hooks` prop to the `MultichainWidget` component. Cu
 2. Pass `destination=0x${string}` to specify the desired owner of the postage batch. This is NOT related to the payer address.
 3. Recommended to pass `intent=postage-batch` to adjust the information text on the first screen.
 4. Optionally pass the `reserved-slots=2` query param to specify the number of intended reserved slots per bucket within the batch. This adjusts the capacity displayed on the first page and shifts the underlying depth values.
+5. Optionally pass `depth=21` to preselect the capacity. Ignored unless it is one of the offered depths (after the `reserved-slots` shift).
+6. Optionally pass `amount=<PLUR per chunk>` to preselect the duration: it is converted to whole days at the current storage price and clamped to 1–365.
+
+Both are defaults only — the user can still change them in the widget, and the `batch` message carries the depth and amount that were actually bought.
 
 Example:
 

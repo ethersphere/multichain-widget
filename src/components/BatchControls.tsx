@@ -10,6 +10,7 @@ import { SwapData } from '../SwapData'
 import {
     createPostageBatchDepthOptions,
     getAmountForDays,
+    getDaysForAmount,
     getQueryParam,
     getStampCost,
     getStoragePrice,
@@ -23,11 +24,34 @@ interface Props {
     setSwapData: Dispatch<SetStateAction<SwapData>>
 }
 
+const MAX_DURATION_DAYS = 365
+
 export function BatchControls({ theme, library, setSwapData }: Props) {
     const reservedSlots = hasQueryParam('reserved-slots') ? Number(getQueryParam('reserved-slots')) : 0
+    const depthOptions = createPostageBatchDepthOptions(reservedSlots)
 
-    const [capacityDepth, setCapacityDepth] = useState(19 + reservedSlots)
+    // The host may seed both controls: `depth` directly, `amount` (PLUR per chunk) as the duration it funds
+    // at the current storage price. They are only defaults — the user can still change them here, and the
+    // `batch` event carries what was actually bought.
+    const queryDepth = getQueryParam('depth')
+    const queryAmount = getQueryParam('amount')
+
+    const [capacityDepth, setCapacityDepth] = useState(
+        depthOptions.some(x => x.value === queryDepth) ? Number(queryDepth) : 19 + reservedSlots
+    )
     const [durationDays, setDurationDays] = useState(7)
+
+    useEffect(() => {
+        if (!/^\d+$/.test(queryAmount)) {
+            return
+        }
+        getStoragePrice(library).then(storagePrice => {
+            const days = getDaysForAmount(BigInt(queryAmount), storagePrice)
+            if (days >= 1) {
+                setDurationDays(Math.min(days, MAX_DURATION_DAYS))
+            }
+        })
+    }, [library, queryAmount])
 
     useEffect(() => {
         getStoragePrice(library).then(storagePrice => {
@@ -46,7 +70,7 @@ export function BatchControls({ theme, library, setSwapData }: Props) {
                 label="Duration (days)"
                 theme={theme}
                 placeholder="7"
-                max={365}
+                max={MAX_DURATION_DAYS}
                 min={1}
                 value={durationDays}
                 onChange={async event => setDurationDays(Number(event))}
@@ -66,7 +90,7 @@ export function BatchControls({ theme, library, setSwapData }: Props) {
                         onChange={async event => {
                             setCapacityDepth(Number(event))
                         }}
-                        options={createPostageBatchDepthOptions(reservedSlots)}
+                        options={depthOptions}
                         testId="capacity-depth-input"
                     />
                 </LabelSpacing>

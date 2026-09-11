@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { MultichainTheme } from '../MultichainTheme'
 import { LabelSpacing } from './LabelSpacing'
 import { Span } from './Span'
@@ -19,6 +19,14 @@ interface Props {
 export function NumberInput({ theme, label, value, onChange, onChangeRaw, min, max, placeholder, testId }: Props) {
     const [textValue, setTextValue] = useState<string>(value.toString())
     const [errorText, setErrorText] = useState<string | null>(null)
+
+    // Follow a value the parent changes on its own (e.g. a default seeded once the storage price is known).
+    // A change that originated here already matches, so typing is never clobbered.
+    useEffect(() => {
+        if (Number(textValue) !== value) {
+            setTextValue(value.toString())
+        }
+    }, [value])
 
     function normalizedOnChange(event: React.ChangeEvent<HTMLInputElement>) {
         let raw = event.target.value

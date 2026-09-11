@@ -37,6 +37,12 @@ export function getAmountForDays(days: number, pricePerBlock: bigint): bigint {
     return (BigInt(days * 86_400) / blockTime) * pricePerBlock + 1n
 }
 
+/** Inverse of getAmountForDays: the whole days a per-chunk amount funds at the given price. */
+export function getDaysForAmount(amount: bigint, pricePerBlock: bigint): number {
+    const blockTime = 5
+    return Math.round((Number(amount / pricePerBlock) * blockTime) / 86_400)
+}
+
 export async function getStoragePrice(library: MultichainLibrary): Promise<bigint> {
     const pricePerBlock = await Cache.get<bigint>('storage-price', Dates.minutes(1), async () =>
         library.getStoragePriceGnosis()
