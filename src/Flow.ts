@@ -24,7 +24,11 @@ import { createSushiSyncStep } from './steps/SushiSyncStep'
 import { createTransferStep } from './steps/TransferStep'
 import { createTransferSyncStep } from './steps/TransferSyncStep'
 
-export type SendTransactionSignature = (tx: { to: `0x${string}`; value: bigint }) => Promise<`0x${string}`>
+export type SendTransactionSignature = (tx: {
+    to: `0x${string}`
+    value: bigint
+    chainId?: number
+}) => Promise<`0x${string}`>
 
 interface FundingFlowOptions {
     library: MultichainLibrary

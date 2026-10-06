@@ -37,7 +37,10 @@ export function createDepositStep(options: Options) {
             context.set('daiBefore', daiBefore)
             const tx = await options.sendTransactionAsync({
                 to: options.temporaryAddress,
-                value: options.sourceTokenAmount.value
+                value: options.sourceTokenAmount.value,
+                // Without it the wallet sends on whatever network it is on, which may have been
+                // changed in the wallet after Gnosis was selected as the source chain.
+                chainId: options.library.constants.gnosisChainId
             })
             options.setMetadata(previous => ({ ...previous, deposit: `https://gnosisscan.io/tx/${tx}` }))
             postPaymentEvent({

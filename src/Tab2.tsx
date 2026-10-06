@@ -3,7 +3,7 @@ import { createClient, Execute, MAINNET_RELAY_API } from '@relayprotocol/relay-s
 import { MultichainLibrary, xBZZ, xDAI } from '@upcoming/multichain-library'
 import { Cache, Dates, FixedPointNumber, Numbers, Objects, Solver, System, Types } from 'cafe-utility'
 import { useEffect, useState } from 'react'
-import { useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
+import { useAccount, useChains, useSendTransaction, useSwitchChain, useWalletClient } from 'wagmi'
 import { getBalance } from 'wagmi/actions'
 import { CreateBatchProgressTracker } from './components/CreateBatchProgressTracker'
 import { FundingProgressTracker } from './components/FundingProgressTracker'
@@ -72,6 +72,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
     // relay and wagmi hooks
     const relayClient = createClient({ chains: configuredRelayChains, apiKey: relayApiKey })
     const walletClient = useWalletClient()
+    const { address, status: accountStatus } = useAccount()
     // the relay kit hooks do not send the API key, so their requests are overridden below
     const { chains: relayChains } = useRelayChains(MAINNET_RELAY_API, undefined, {
         queryFn: () => queryRelayChains(MAINNET_RELAY_API, undefined, relayApiHeaders)
@@ -104,6 +105,9 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
         selectedTokenBalance && selectedTokenAmountNeeded
             ? selectedTokenBalance.value >= selectedTokenAmountNeeded.value
             : true
+    // the wallet client is refetched after an account switch, so it may briefly still belong to the previous account
+    const isSourceAccount = (x: string | undefined) => !!x && x.toLowerCase() === swapData.sourceAddress.toLowerCase()
+    const walletClientMatchesSource = isSourceAccount(walletClient.data?.account.address)
 
     // send transaction hook in case of xdai source token
     const { sendTransactionAsync } = useSendTransaction()
@@ -205,6 +209,16 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
         setLoadingRelayQuote
     ])
 
+    // the source account is chosen on Tab 1, so switching or disconnecting it in the wallet sends the user back there
+    useEffect(() => {
+        if (status !== 'pending') {
+            return
+        }
+        if (accountStatus === 'disconnected' || (address && !isSourceAccount(address))) {
+            setTab(1)
+        }
+    }, [address, accountStatus, status, swapData.sourceAddress, setTab])
+
     function onBack() {
         setTab(1)
     }
@@ -248,8 +262,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             return
         }
 
-        if (!walletClient.data) {
-            console.error('Wallet client not available')
+        if (!walletClient.data || !walletClientMatchesSource) {
+            console.error('Wallet client not available for the source account')
             return
         }
 
@@ -523,7 +537,7 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
                 disabled={
                     status === 'completed'
                         ? false
-                        : status !== 'pending' || !relayQuote || !hasSufficientBalance || !walletClient.data
+                        : status !== 'pending' || !relayQuote || !hasSufficientBalance || !walletClientMatchesSource
                 }
                 testId="fund"
                 tooltip={
