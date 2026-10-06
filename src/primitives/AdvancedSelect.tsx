@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MultichainTheme } from '../MultichainTheme'
 import { Typography } from './Typography'
 
@@ -14,12 +14,40 @@ interface Props {
 
 export function AdvancedSelect({ theme, value, label, onChange, onChangeGuard, options, testId }: Props) {
     const [open, setOpen] = useState(false)
+    const containerRef = useRef<HTMLDivElement>(null)
+
+    useEffect(() => {
+        if (!open) {
+            return
+        }
+
+        // Pressing anywhere outside (including another select's trigger) closes this menu.
+        function onPointerDown(event: PointerEvent) {
+            if (containerRef.current && !event.composedPath().includes(containerRef.current)) {
+                setOpen(false)
+            }
+        }
+
+        function onKeyDown(event: KeyboardEvent) {
+            if (event.key === 'Escape') {
+                setOpen(false)
+            }
+        }
+
+        document.addEventListener('pointerdown', onPointerDown)
+        document.addEventListener('keydown', onKeyDown)
+        return () => {
+            document.removeEventListener('pointerdown', onPointerDown)
+            document.removeEventListener('keydown', onKeyDown)
+        }
+    }, [open])
 
     const current = options.find(o => o.value === value)
 
     return (
-        <div className="multichain__select-container">
+        <div className="multichain__select-container" ref={containerRef}>
             <button
+                type="button"
                 className="multichain__select-trigger"
                 onClick={() => setOpen(x => !x)}
                 style={{
@@ -91,16 +119,15 @@ export function AdvancedSelect({ theme, value, label, onChange, onChangeGuard, o
                                 paddingBottom: theme.inputVerticalPadding
                             }}
                             onClick={async () => {
+                                // Close right away; the guard may wait on a wallet prompt.
+                                setOpen(false)
                                 if (onChangeGuard) {
-                                    await onChangeGuard(option.value).then(allowed => {
-                                        if (allowed) {
-                                            onChange(option.value)
-                                        }
-                                    })
+                                    if (await onChangeGuard(option.value)) {
+                                        onChange(option.value)
+                                    }
                                 } else {
                                     onChange(option.value)
                                 }
-                                setOpen(false)
                             }}
                         >
                             {option.image ? (
