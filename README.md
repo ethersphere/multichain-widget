@@ -121,6 +121,7 @@ We use SushiSwap contracts and its API to swap xDAI to xBZZ.
 - `data-test-id="error-invalid-address"`
 - `data-test-id="error-bad-address-checksum"`
 - `data-test-id="error-not-enough-bzz"`
+- `data-test-id="error-empty-xdai-amount"`
 
 ### Screen 2
 

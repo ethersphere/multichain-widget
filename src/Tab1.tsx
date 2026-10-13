@@ -51,15 +51,21 @@ export function Tab1({
     const hasEnoughBalance = swapData.bzzAmount >= MINIMUM_XBZZ
     let malformedAddress = false
     let wrongChecksum = false
+    let normalizedAddress = swapData.targetAddress
 
     if (swapData.targetAddress) {
         try {
             malformedAddress = true
             const cleanAddress = Types.asHexString(swapData.targetAddress, { byteLength: 20 })
             malformedAddress = false
-            if (cleanAddress.match(/[A-F]/)) {
+            const hex = cleanAddress.slice(2)
+            // only mixed case addresses carry a checksum, single case ones are treated as lowercase
+            if (hex.match(/[a-f]/) && hex.match(/[A-F]/)) {
                 const checksummed = Elliptic.checksumEncode(Binary.hexToUint8Array(cleanAddress))
-                wrongChecksum = checksummed !== swapData.targetAddress
+                wrongChecksum = checksummed !== cleanAddress
+                normalizedAddress = cleanAddress
+            } else {
+                normalizedAddress = cleanAddress.toLowerCase()
             }
         } catch (e) {}
     }
@@ -70,7 +76,7 @@ export function Tab1({
                 alert('Cannot detect connected chain ID.')
                 return
             }
-            setSwapData(x => ({ ...x, sourceAddress: Types.asHexString(address) }))
+            setSwapData(x => ({ ...x, sourceAddress: Types.asHexString(address), targetAddress: normalizedAddress }))
             setInitialChainId(chainId)
             setTab(2)
         }
@@ -169,7 +175,7 @@ export function Tab1({
                 </Typography>
             )}
             {emptyNativeAmount && (
-                <Typography theme={theme} testId="error-bad-address-checksum">
+                <Typography theme={theme} testId="error-empty-xdai-amount">
                     <Span theme={theme} color={theme.errorTextColor} small>
                         *Please enter the amount of xDAI you want to swap (0-10).
                     </Span>
