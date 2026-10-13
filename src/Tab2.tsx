@@ -285,6 +285,8 @@ export function Tab2({ theme, mode, hooks, setTab, swapData, initialChainId, lib
             sourceToken,
             sourceTokenAmount: selectedTokenAmountNeeded,
             sendTransactionAsync,
+            switchChainAsync,
+            sourceAddress: Types.asHexString(swapData.sourceAddress),
             targetAddress: Types.asHexString(swapData.targetAddress),
             temporaryAddress: Types.asHexString(swapData.temporaryAddress),
             temporaryPrivateKey: Types.asHexString(swapData.sessionKey),

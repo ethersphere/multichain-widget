@@ -28,7 +28,10 @@ export type SendTransactionSignature = (tx: {
     to: `0x${string}`
     value: bigint
     chainId?: number
+    account?: `0x${string}`
 }) => Promise<`0x${string}`>
+
+export type SwitchChainSignature = (parameters: { chainId: number }) => Promise<unknown>
 
 interface FundingFlowOptions {
     library: MultichainLibrary
@@ -40,7 +43,9 @@ interface FundingFlowOptions {
     temporaryAddress: `0x${string}`
     temporaryPrivateKey: `0x${string}`
     targetAddress: `0x${string}`
+    sourceAddress: `0x${string}`
     sendTransactionAsync: SendTransactionSignature
+    switchChainAsync: SwitchChainSignature
     relayClient: RelayClient
     walletClient: WalletClient
     relayQuote: Execute
